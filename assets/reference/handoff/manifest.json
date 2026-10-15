@@ -1,0 +1,93 @@
+{
+  "status": "artwork handoff; integration unverified",
+  "reactions": {
+    "day-tap": {
+      "durationMs": 2200,
+      "frames": 5,
+      "size": [
+        440,
+        450
+      ],
+      "playback": "once",
+      "returnsTo": "day sleep or night idle controlled by host",
+      "source": "Original anime reference; generated sprite atlas"
+    },
+    "night-tap": {
+      "durationMs": 1500,
+      "frames": 5,
+      "size": [
+        440,
+        450
+      ],
+      "playback": "once",
+      "returnsTo": "day sleep or night idle controlled by host",
+      "source": "Original anime reference; generated sprite atlas"
+    },
+    "income": {
+      "durationMs": 1700,
+      "frames": 7,
+      "size": [
+        440,
+        450
+      ],
+      "playback": "once",
+      "returnsTo": "day sleep or night idle controlled by host",
+      "source": "Original anime reference; generated sprite atlas"
+    },
+    "expense": {
+      "durationMs": 1400,
+      "frames": 7,
+      "size": [
+        440,
+        450
+      ],
+      "playback": "once",
+      "returnsTo": "day sleep or night idle controlled by host",
+      "source": "Original anime reference; generated sprite atlas"
+    }
+  },
+  "files": [
+    "README.md",
+    "assets/backgrounds/forest/afternoon.png",
+    "assets/backgrounds/forest/dawn.png",
+    "assets/backgrounds/forest/dusk.png",
+    "assets/backgrounds/forest/evening.png",
+    "assets/backgrounds/forest/forenoon.png",
+    "assets/backgrounds/forest/midnight.png",
+    "assets/backgrounds/forest/morning.png",
+    "assets/backgrounds/forest/night.png",
+    "assets/backgrounds/forest/noon.png",
+    "assets/backgrounds/forest/sunrise.png",
+    "assets/backgrounds/forest/twilight.png",
+    "assets/brand-drafts/app-icon-source.png",
+    "assets/brand-drafts/owl-symbol.png",
+    "assets/brand-drafts/owllowance-lockup-white.png",
+    "assets/mascot/day-sleep.png",
+    "assets/mascot/day-tap-poster.png",
+    "assets/mascot/day-tap.gif",
+    "assets/mascot/day-tap.webp",
+    "assets/mascot/expense-poster.png",
+    "assets/mascot/expense.gif",
+    "assets/mascot/expense.webp",
+    "assets/mascot/income-poster.png",
+    "assets/mascot/income.gif",
+    "assets/mascot/income.webp",
+    "assets/mascot/night-awake.png",
+    "assets/mascot/night-idle.gif",
+    "assets/mascot/night-tap-poster.png",
+    "assets/mascot/night-tap.gif",
+    "assets/mascot/night-tap.webp",
+    "design/icon-map.json",
+    "design/tokens.json",
+    "docs/design-decisions.md",
+    "docs/reaction-reference.md",
+    "docs/verification.md",
+    "preview/index.html",
+    "preview/reactions.js",
+    "source/mascot-atlases/day-tap-atlas.png",
+    "source/mascot-atlases/expense-atlas.png",
+    "source/mascot-atlases/idle-blink-atlas.png",
+    "source/mascot-atlases/income-atlas.png",
+    "source/mascot-atlases/night-tap-atlas.png"
+  ]
+}

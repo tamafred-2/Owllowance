@@ -1,0 +1,1273 @@
+{
+  "artworkStatus": "User-supplied forest, anime owl and startup artwork integrated; store exports and editable vector masters remain pending.",
+  "fontStatus": "App text uses the system font. No custom text font supplied; Expo Router includes vendor symbol-font assets in native bundles.",
+  "runtimeRegistry": "src/design-system/artwork.ts",
+  "animationFormat": "Bundled GIF with PNG reduced-motion/error fallbacks. WebP alternatives retained for future verified integration.",
+  "backgroundSchedule": "Device-local hour bands in forestSceneAt; not solar-time calculations.",
+  "provenanceNotes": "Original handoff manifests and notes are archived under reference/. Their old paths are historical; this manifest lists current paths. No claim of final branding approval.",
+  "assets": [
+    {
+      "key": "backgrounds.forest.afternoon",
+      "filename": "backgrounds/forest/afternoon.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2784179,
+      "sha256": "7b604eebd3959f1aa8c43fb00c398d8aa0ea91e8eeca7a8d82b472c285ae15ec",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2784179 bytes"
+    },
+    {
+      "key": "backgrounds.forest.dawn",
+      "filename": "backgrounds/forest/dawn.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2420434,
+      "sha256": "6037272683a866d6816cdd3399aec774b71e4c13b5062b517700c14c582c34ba",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2420434 bytes"
+    },
+    {
+      "key": "backgrounds.forest.dusk",
+      "filename": "backgrounds/forest/dusk.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2636541,
+      "sha256": "deff3754e79fc7853b620a990d5b5a36ebe1b916a65d3102ec0ddc5944dabb22",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2636541 bytes"
+    },
+    {
+      "key": "backgrounds.forest.evening",
+      "filename": "backgrounds/forest/evening.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2487076,
+      "sha256": "90efbeb43ddb75e2281ee7be18c4e1a3af89109d3096d3863434ef22a4c8227b",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2487076 bytes"
+    },
+    {
+      "key": "backgrounds.forest.forenoon",
+      "filename": "backgrounds/forest/forenoon.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 3049207,
+      "sha256": "f45763007630a40ad21d31b0ca29582549b1c837003e0ac59094254d49102f5d",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 3049207 bytes"
+    },
+    {
+      "key": "backgrounds.forest.midnight",
+      "filename": "backgrounds/forest/midnight.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2283302,
+      "sha256": "7bbe07e70d002eca07bb0cd951b93de4597dca55f8826a8b0c5514fe99cfc53e",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2283302 bytes"
+    },
+    {
+      "key": "backgrounds.forest.morning",
+      "filename": "backgrounds/forest/morning.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2661978,
+      "sha256": "d520e4f198c559a98b76659cdd797209088acb51e450c9f4ed3961d53bbc8235",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2661978 bytes"
+    },
+    {
+      "key": "backgrounds.forest.night",
+      "filename": "backgrounds/forest/night.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2293120,
+      "sha256": "ff5fe4c2fede975629b09f568308113c832d9863c21194ea4eeacba39468b92a",
+      "animationStates": [],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2293120 bytes"
+    },
+    {
+      "key": "backgrounds.forest.noon",
+      "filename": "backgrounds/forest/noon.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 3071748,
+      "sha256": "630745c61dbfa6fe361cbb01f983aace58b24606b40d19c459eca8a1fc92c0a9",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 3071748 bytes"
+    },
+    {
+      "key": "backgrounds.forest.sunrise",
+      "filename": "backgrounds/forest/sunrise.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2575213,
+      "sha256": "0159c69c4f8d54195bb0c5c3a1473048f205c2d48ba11e87fdae01d726f7ada8",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2575213 bytes"
+    },
+    {
+      "key": "backgrounds.forest.twilight",
+      "filename": "backgrounds/forest/twilight.png",
+      "role": "Device-local forest scene",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 2317242,
+      "sha256": "f458743a6af8f38555c11c1a73ea529bf2641dc632194e11f17d7948b22a0cfb",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 2317242 bytes"
+    },
+    {
+      "key": "brand.app-icon-source",
+      "filename": "brand/app-icon-source.png",
+      "role": "Brand artwork; app icon remains a concept",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1361893,
+      "sha256": "7201bbbfada661681f16140e1bf906f2b1a7bd51ec7651f1207e91375c33ea3e",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1361893 bytes"
+    },
+    {
+      "key": "brand.owl-mark",
+      "filename": "brand/owl-mark.png",
+      "role": "Brand artwork; app icon remains a concept",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1241502,
+      "sha256": "28ef65ce9bbd41aae9f9a5fa7ebd4da11081c2c15cf871e12a18acb201195487",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1241502 bytes"
+    },
+    {
+      "key": "brand.owllowance-wordmark-white",
+      "filename": "brand/owllowance-wordmark-white.png",
+      "role": "Brand artwork; app icon remains a concept",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        2048,
+        768
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1212648,
+      "sha256": "72d2d7db3951546855d2089be692e8c386235b1c865c506f4134e6911ab22bfa",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1212648 bytes"
+    },
+    {
+      "key": "mascot.day-sleep",
+      "filename": "mascot/day-sleep.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 172817,
+      "sha256": "bb03ff5a5d269e0084beac9588e91456bb034bf214dd045216d3e6d9ef61b27a",
+      "animationStates": [],
+      "themeVariants": [
+        "day"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 172817 bytes"
+    },
+    {
+      "key": "mascot.day-tap-poster",
+      "filename": "mascot/day-tap-poster.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 180337,
+      "sha256": "05106d4fa9697a1b96bcc480a34891c6461a3a9fe255dc94d20d51a027f27419",
+      "animationStates": [],
+      "themeVariants": [
+        "day"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 180337 bytes"
+    },
+    {
+      "key": "mascot.day-tap",
+      "filename": "mascot/day-tap.gif",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 5,
+      "durationMs": 2200,
+      "loop": false,
+      "bytes": 255467,
+      "sha256": "1f5ba790cca821225df4171ade0a09bd8aa159c848e15cb6c07d0f84bac5e39a",
+      "animationStates": [
+        "day-tap"
+      ],
+      "themeVariants": [
+        "day"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 255467 bytes"
+    },
+    {
+      "key": "mascot.day-tap",
+      "filename": "mascot/day-tap.webp",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 5,
+      "durationMs": 2200,
+      "loop": false,
+      "bytes": 745224,
+      "sha256": "9633adc9a7d61fe1c89e0de10510009722b5f08179fc36b2a311d0f639ec2fb6",
+      "animationStates": [
+        "day-tap"
+      ],
+      "themeVariants": [
+        "day"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 745224 bytes"
+    },
+    {
+      "key": "mascot.expense-poster",
+      "filename": "mascot/expense-poster.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 168772,
+      "sha256": "95f1083870c72183b45c218b08b26b9429ad1296eaea3227c9947acebb7bc6f8",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 168772 bytes"
+    },
+    {
+      "key": "mascot.expense",
+      "filename": "mascot/expense.gif",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 7,
+      "durationMs": 1400,
+      "loop": false,
+      "bytes": 371190,
+      "sha256": "904aa6f467425073b519fd03e1a3f5536d2a824a84487c42eead1185eaacc956",
+      "animationStates": [
+        "expense"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 371190 bytes"
+    },
+    {
+      "key": "mascot.expense",
+      "filename": "mascot/expense.webp",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 7,
+      "durationMs": 1400,
+      "loop": false,
+      "bytes": 1060720,
+      "sha256": "652a6efd8193947dd1bb70ec9af70524c6058ec5197b696946d32b676b2c5952",
+      "animationStates": [
+        "expense"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1060720 bytes"
+    },
+    {
+      "key": "mascot.income-poster",
+      "filename": "mascot/income-poster.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 184490,
+      "sha256": "e0e98e98bf96cc12780a366b614ee9019061d2cb201a533f1ff53e4a94f9343f",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 184490 bytes"
+    },
+    {
+      "key": "mascot.income",
+      "filename": "mascot/income.gif",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 7,
+      "durationMs": 1700,
+      "loop": false,
+      "bytes": 393710,
+      "sha256": "0b657882d25ba08eb230c7de1bccb3fe7ead09c93ed43022776aa824278e40a4",
+      "animationStates": [
+        "income"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 393710 bytes"
+    },
+    {
+      "key": "mascot.income",
+      "filename": "mascot/income.webp",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 7,
+      "durationMs": 1700,
+      "loop": false,
+      "bytes": 1101804,
+      "sha256": "48ea477ede55ee40739d9f7d1817a3b8efba17544d2b3962356343e85de0c85b",
+      "animationStates": [
+        "income"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1101804 bytes"
+    },
+    {
+      "key": "mascot.night-awake",
+      "filename": "mascot/night-awake.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 179299,
+      "sha256": "efcb16790b92783bd4eaba45a31784d6d01dffb4ca3922780d8614a51855a8d8",
+      "animationStates": [],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 179299 bytes"
+    },
+    {
+      "key": "mascot.night-idle",
+      "filename": "mascot/night-idle.gif",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 6,
+      "durationMs": 4550,
+      "loop": true,
+      "bytes": 289137,
+      "sha256": "d87ae6b2f1c3409b43ad3891f3a65c9ab95baaea4ed833e07416bf0e5e780420",
+      "animationStates": [
+        "night-idle"
+      ],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 289137 bytes"
+    },
+    {
+      "key": "mascot.night-tap-poster",
+      "filename": "mascot/night-tap-poster.png",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 175670,
+      "sha256": "18d024645f84396a4a6f92757cde5a4e049ded694b2a46c0b15a04596a74d718",
+      "animationStates": [],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 175670 bytes"
+    },
+    {
+      "key": "mascot.night-tap",
+      "filename": "mascot/night-tap.gif",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 5,
+      "durationMs": 1500,
+      "loop": false,
+      "bytes": 279334,
+      "sha256": "bf5d154dc5185eb159c7c69288b61c4bd51c26769c698d152d88f954a51567a9",
+      "animationStates": [
+        "night-tap"
+      ],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 279334 bytes"
+    },
+    {
+      "key": "mascot.night-tap",
+      "filename": "mascot/night-tap.webp",
+      "role": "Dashboard owl artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        440,
+        450
+      ],
+      "frames": 5,
+      "durationMs": 1500,
+      "loop": false,
+      "bytes": 768220,
+      "sha256": "2cc9cfff244d27e33fe7720104c60ebfdda67a6da77674ac5068ad0560914406",
+      "animationStates": [
+        "night-tap"
+      ],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 768220 bytes"
+    },
+    {
+      "key": "motion.loading-loop",
+      "filename": "motion/loading-loop.gif",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 4,
+      "durationMs": 2680,
+      "loop": true,
+      "bytes": 94107,
+      "sha256": "e615539bfc60c8ddc38601acca77c4c235e0098b9f717039a1ad0aea3781eae1",
+      "animationStates": [
+        "loading-loop"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 94107 bytes"
+    },
+    {
+      "key": "motion.loading-loop",
+      "filename": "motion/loading-loop.webp",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 4,
+      "durationMs": 2680,
+      "loop": true,
+      "bytes": 283634,
+      "sha256": "8ba7992e25a48bcac9088f8c8dcddb85c69b5196b068ca1b13ba0d8ff4b43273",
+      "animationStates": [
+        "loading-loop"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 283634 bytes"
+    },
+    {
+      "key": "motion.logo-asleep",
+      "filename": "motion/logo-asleep.png",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 78136,
+      "sha256": "af2ff7a2d763059329176e4586b934f1e4daee2801e768a47344625f741465f0",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 78136 bytes"
+    },
+    {
+      "key": "motion.logo-awake",
+      "filename": "motion/logo-awake.png",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 85512,
+      "sha256": "7a327c4d456e3223b1a6be87f4290be3fd7208c6c2a1432d795c6beb56660e02",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 85512 bytes"
+    },
+    {
+      "key": "motion.opening",
+      "filename": "motion/opening.gif",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 3,
+      "durationMs": 800,
+      "loop": false,
+      "bytes": 70256,
+      "sha256": "a046bc5c48acb7f0ef2918b823dcc4439da19a4d158924b8f11e58f097df7fed",
+      "animationStates": [
+        "opening"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 70256 bytes"
+    },
+    {
+      "key": "motion.opening",
+      "filename": "motion/opening.webp",
+      "role": "Application opening/loading artwork",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        300,
+        300
+      ],
+      "frames": 3,
+      "durationMs": 800,
+      "loop": false,
+      "bytes": 212284,
+      "sha256": "be18a15c702eb4bae04688df0e1b0cc8123b8db0f9f8d361dfc5f8f3ce965b0d",
+      "animationStates": [
+        "opening"
+      ],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 212284 bytes"
+    },
+    {
+      "key": "source.brand.opening-atlas",
+      "filename": "source/brand/opening-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1643000,
+      "sha256": "cad9e93ea8a080a2bdf030fdba4595984a18565bbf86f0659563076b51c20cd6",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1643000 bytes"
+    },
+    {
+      "key": "source.mascot-atlases.day-tap-atlas",
+      "filename": "source/mascot-atlases/day-tap-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1646338,
+      "sha256": "a85e44316cc73058abef0a47deed9226eccf1b35484f01c700588aea94336b5b",
+      "animationStates": [],
+      "themeVariants": [
+        "day"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1646338 bytes"
+    },
+    {
+      "key": "source.mascot-atlases.expense-atlas",
+      "filename": "source/mascot-atlases/expense-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1644845,
+      "sha256": "e1362f660a7f25c2e6cd8f074a9268782ff1841047ba9c491424e00e28109677",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1644845 bytes"
+    },
+    {
+      "key": "source.mascot-atlases.idle-blink-atlas",
+      "filename": "source/mascot-atlases/idle-blink-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1473990,
+      "sha256": "d679cf820293e1b3b129679f8d38b2146803297d4e2f9569a86580b27927983c",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1473990 bytes"
+    },
+    {
+      "key": "source.mascot-atlases.income-atlas",
+      "filename": "source/mascot-atlases/income-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1595523,
+      "sha256": "116bbe6e263a80c8603ee126ae101827689f1ca543584f8f7ce2496d5b022c60",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1595523 bytes"
+    },
+    {
+      "key": "source.mascot-atlases.night-tap-atlas",
+      "filename": "source/mascot-atlases/night-tap-atlas.png",
+      "role": "Source atlas; never loaded by the app",
+      "source": "User-supplied Owllowance asset handoff",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "Organization and app integration authorized by user",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 1637834,
+      "sha256": "92a89edfcc16306fa9ac1f75b53d25f179f726caa3066c03b9f0cfaf054c30e3",
+      "animationStates": [],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "Original supplied encoding; 1637834 bytes"
+    },
+    {
+      "key": "ui-icons",
+      "filename": "lucide-react-native (runtime package, 1.57.0)",
+      "role": "Semantic outline icons through src/design-system/icon.tsx",
+      "source": "https://github.com/lucide-icons/lucide",
+      "author": "Lucide Icons and Contributors; derived Feather icons by Cole Bemis",
+      "license": "ISC and MIT; see licenses/lucide-react-native-LICENSE.txt",
+      "modificationRights": "Permitted with retained license notices",
+      "dimensions": "Vector; shared 16/18/20/24/32 logical-pixel usage",
+      "themeVariants": "Semantic theme colors applied in code",
+      "animationStates": [],
+      "duration": null,
+      "loop": false,
+      "optimizedFileSize": "Part of platform bundles; no standalone raster file"
+    },
+    {
+      "key": "runtime.forest.afternoon",
+      "filename": "backgrounds/forest/optimized/afternoon.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/afternoon.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 296886,
+      "sha256": "3a72b0ff696d9a63471668b030ce3d411709fd6c2acdf592351cf20f501bf1d1",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 296886 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.dawn",
+      "filename": "backgrounds/forest/optimized/dawn.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/dawn.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 219224,
+      "sha256": "94fb3ee9af375c200e28a7b08d9478d785d625c1c69797e315368001e3a31246",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 219224 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.dusk",
+      "filename": "backgrounds/forest/optimized/dusk.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/dusk.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 268830,
+      "sha256": "7322506e36e4c7eac09c750ec2ad07ff55b5bb4fa25fe4b81d681afa0fb24d8f",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 268830 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.evening",
+      "filename": "backgrounds/forest/optimized/evening.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/evening.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 231177,
+      "sha256": "bd61b8c66ba8beb6d27e5a56587a3817df5e80cb949b5fbb0ae9d490f1c7f8de",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 231177 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.forenoon",
+      "filename": "backgrounds/forest/optimized/forenoon.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/forenoon.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 345881,
+      "sha256": "c5769871014b5d0fca45f342d2d3c4182eaaa27332b99999e89bb7e1a49b4848",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 345881 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.midnight",
+      "filename": "backgrounds/forest/optimized/midnight.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/midnight.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 187612,
+      "sha256": "dffcdc25cf1af8e517a0ed82e7eda5826b8f35ab7719a4c9c9905f5b3c901a6e",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 187612 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.morning",
+      "filename": "backgrounds/forest/optimized/morning.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/morning.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 260762,
+      "sha256": "3103e061909c77eff5802615afb0866f4c848ceb6248abe409319d06e564cda9",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 260762 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.night",
+      "filename": "backgrounds/forest/optimized/night.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/night.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 202648,
+      "sha256": "4535808da93b03e967567a3e1007c01c6aa97770af4fd6a3625b3dceb546b9cc",
+      "animationStates": [],
+      "themeVariants": [
+        "night"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 202648 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.noon",
+      "filename": "backgrounds/forest/optimized/noon.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/noon.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 343518,
+      "sha256": "57fc6f2547c9f8d989dab2cd412e51664a7b61f561e2ee9983094a828b0b13b1",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 343518 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.sunrise",
+      "filename": "backgrounds/forest/optimized/sunrise.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/sunrise.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 274324,
+      "sha256": "051b563364deb42d1b18aa352ec6341238342f0b0f75d5ba0c24a6e812f66136",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 274324 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "runtime.forest.twilight",
+      "filename": "backgrounds/forest/optimized/twilight.jpg",
+      "role": "Optimized runtime forest scene",
+      "source": "backgrounds/forest/twilight.png",
+      "author": "AI-assisted artwork per supplied handoff; individual author not specified",
+      "license": "No separate artwork license supplied",
+      "modificationRights": "User requested compression and loading optimization",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "frames": 1,
+      "durationMs": null,
+      "loop": false,
+      "bytes": 201460,
+      "sha256": "e85900b5d4a08ffa2dfce2985cbd3039d7abcc070483e2bba2cba63fee9fe18f",
+      "animationStates": [],
+      "themeVariants": [
+        "shared"
+      ],
+      "optimizedFileSize": "JPEG quality 88; 201460 bytes; generated by scripts/optimize-forests.ps1"
+    },
+    {
+      "key": "startup.brandedLoop",
+      "filename": "owllowance-loading-loop.gif",
+      "role": "App opening and loading animation with embedded wordmark",
+      "source": "User-supplied GIF, selected by user",
+      "author": "Not specified",
+      "license": "No separate license supplied",
+      "modificationRights": "App integration authorized by user",
+      "dimensions": [
+        560,
+        560
+      ],
+      "frames": 41,
+      "durationMs": 2400,
+      "loop": true,
+      "bytes": 1617587,
+      "sha256": "dcab1905e385c1dbd1f5d2fe9f8269ac960554d795081db6aa694c8003ce0651",
+      "animationStates": [
+        "opening",
+        "loading"
+      ],
+      "themeVariants": [
+        "fixed light artwork"
+      ],
+      "optimizedFileSize": "Original supplied encoding retained"
+    }
+  ]
+}

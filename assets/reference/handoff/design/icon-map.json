@@ -1,0 +1,4 @@
+{
+  "status":"Proposed semantic registry; install and validate one icon package in repository",
+  "icons":{"home":"House","activity":"List","plan":"CalendarDays","wallets":"Wallet","add":"Plus","expense":"ArrowUpRight","income":"ArrowDownLeft","transfer":"ArrowLeftRight","settings":"Settings","insights":"ChartNoAxesCombined","search":"Search","category":"Tags","backup":"Download","restore":"Upload","light":"Sun","dark":"Moon","system":"Monitor","showBalance":"Eye","hideBalance":"EyeOff","success":"CircleCheck","error":"CircleAlert","close":"X"}
+}
