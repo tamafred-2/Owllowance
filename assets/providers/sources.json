@@ -1,0 +1,88 @@
+[
+  {
+    "name": "gcash",
+    "source": "https://cdn.prod.website-files.com/6385b55675a0bd614777a5c1/64265cd252f7516ad684940c_Webclip.png",
+    "sha256": "dd4e7783a367b134487ec1f74d2eaff5de3aa58177a746a912fa5f5117f89363",
+    "bytes": 10921
+  },
+  {
+    "name": "maya",
+    "source": "https://www.maya.ph/hubfs/Maya/favicons/MAYA_FAVICONS-Mint-OnBlackBG.png",
+    "sha256": "bc05fbbb380ec95ef64c96781f6c3cc0fbddba6037223debd57a7e5721356a8f",
+    "bytes": 235
+  },
+  {
+    "name": "bpi",
+    "source": "https://www.bpi.com.ph/etc.clientlibs/bpi/clientlibs/clientlib-bpi-ph/resources/Android-Icon.png",
+    "sha256": "9eea4209ef889981d789b0f0ddd990d2caa24e55cc74509d2b715f1eb7b9239d",
+    "bytes": 8107
+  },
+  {
+    "name": "wise",
+    "source": "https://wise.com/public-resources/assets/icons/wise-personal/apple_touch_icon.png",
+    "sha256": "0306b7127c224a8a0b95e74a080628119c534224d58a7c01e73630af3b9dbc2f",
+    "bytes": 1114
+  },
+  {
+    "name": "gotyme",
+    "source": "https://www.gotyme.com.ph/static-assets/images/gotymebank-logo-primary-black.svg",
+    "sha256": "a3ae792c3ebbc41ade07c63f28d2824e25c8c380f449af9f6d173918346833a2",
+    "bytes": 4685
+  },
+  {
+    "name": "metrobank",
+    "source": "https://web-assets.metrobank.com.ph/1753963478-logo_redesign-2025-2x.png",
+    "sha256": "2cd2089644c2100c3c827922e4db358144350022d13836a5aed944db5ce585fb",
+    "bytes": 2577
+  },
+  {
+    "name": "paypal",
+    "source": "https://www.paypalobjects.com/marketing/web/icons/monogram/pp144.png",
+    "sha256": "a403722770a8b5260871ae3d59cf9410efbc26898443a62e062985649a636ecd",
+    "bytes": 1449
+  },
+  {
+    "name": "bdo",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ae/3e/34/ae3e347c-ced7-418c-d494-844f59ad6865/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg",
+    "listing": "https://apps.apple.com/ph/app/bdo-online/id1551584630?uo=4",
+    "publisher": "Banco De Oro Unibank, Inc.",
+    "sha256": "abb92104f40b925e37559613d0303782b506d40fcede0edf6327d1ba1975584c",
+    "bytes": 25268
+  },
+  {
+    "name": "unionbank",
+    "source": "https://online.unionbankph.com/ucore/img/rebrand/logo-black.png",
+    "sha256": "4ac82121d8d467f9895dec7ba7dca0cb6402edeb01dbd3704c36d24360c7cc62",
+    "bytes": 9739
+  },
+  {
+    "name": "unionbank",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ef/b1/cb/efb1cb67-61d6-232d-ca14-7acea812d3de/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
+    "listing": "https://apps.apple.com/ph/app/unionbank-online/id1242291412?uo=4",
+    "publisher": "UnionBank of the Philippines",
+    "sha256": "148ebdde35ec6c722fcaeee49fd17ed3a97346fb87bb58fa319208368f16520c",
+    "bytes": 21253
+  },
+  {
+    "name": "maya-app",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/be/c6/83/bec68368-e657-3760-7fff-25d6da45bce9/AppIcon-0-0-1x_U007emarketing-0-8-0-0-85-220.png/512x512bb.jpg",
+    "listing": "https://apps.apple.com/ph/app/maya-savings-loans-cards/id991673877?uo=4",
+    "publisher": "Maya Philippines, Inc.",
+    "sha256": "b8d704efa77a1ca2ccc7550bc1c20faa414352efeb382f7b94963d44acc3c2c7",
+    "bytes": 17416
+  },
+  {
+    "name": "gotyme-app",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/92/71/88/92718899-e05f-2eee-854c-f101a3f0017a/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/512x512bb.jpg",
+    "listing": "https://apps.apple.com/ph/app/gotyme-bank-philippines/id1637067963?uo=4",
+    "publisher": "GOTYME BANK CORPORATION",
+    "sha256": "e9801874fb308aeee1a0d579679c7abb5ce6da2699d47c7267f39ff359454ef8",
+    "bytes": 29347
+  },
+  {
+    "name": "maribank",
+    "source": "https://banking-aka-storage.maribank.ph/seabank/ph/cmps-website/page-resource/live/static/20261015/14_00_00__ld464d/ph/favicon-ph.png",
+    "sha256": "478202b85f8cf0ab90c28f0cce1d4a29168786be890dd75af1f23c10e814ea3a",
+    "bytes": 4744
+  }
+]

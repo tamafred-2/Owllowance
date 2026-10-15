@@ -1,0 +1,82 @@
+[
+  {
+    "path": "brand/app-icon-source.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "frames": 1
+  },
+  {
+    "path": "brand/owl-mark.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "frames": 1
+  },
+  {
+    "path": "brand/owllowance-wordmark-white.png",
+    "size": [
+      2048,
+      768
+    ],
+    "frames": 1
+  },
+  {
+    "path": "motion/loading-loop.gif",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 4
+  },
+  {
+    "path": "motion/loading-loop.webp",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 4
+  },
+  {
+    "path": "motion/logo-asleep.png",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 1
+  },
+  {
+    "path": "motion/logo-awake.png",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 1
+  },
+  {
+    "path": "motion/opening.gif",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 3
+  },
+  {
+    "path": "motion/opening.webp",
+    "size": [
+      300,
+      300
+    ],
+    "frames": 3
+  },
+  {
+    "path": "source/opening-atlas.png",
+    "size": [
+      1774,
+      887
+    ],
+    "frames": 1
+  }
+]
