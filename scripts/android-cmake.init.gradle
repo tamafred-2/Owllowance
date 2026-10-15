@@ -1,0 +1,13 @@
+// Opt-in local build workaround for Ninja's Windows path limit.
+// Changes generated CMake output only; no native source or global Gradle config.
+def stagingRoot = System.getenv('OWLLOWANCE_CMAKE_DIR')
+if (!stagingRoot) {
+    throw new GradleException('Set OWLLOWANCE_CMAKE_DIR to a short, task-specific build directory.')
+}
+
+gradle.beforeProject { project ->
+    project.plugins.withId('com.android.application') {
+        def android = project.extensions.getByName('android')
+        android.externalNativeBuild.cmake.buildStagingDirectory = new File(stagingRoot, project.name)
+    }
+}
