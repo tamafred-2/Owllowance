@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Owllowance",
+    "slug": "owllowance",
+    "version": "0.1.0",
+    "scheme": "owllowance",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.owllowance.app",
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Owllowance"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-status-bar",
+      ["expo-splash-screen", {
+        "backgroundColor": "#F4F5F8",
+        "dark": { "backgroundColor": "#F4F5F8" },
+        "android": {
+          "drawable": { "icon": "./assets/motion/native-launch-placeholder.xml" }
+        }
+      }],
+      "./plugins/with-native-loading.cjs"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
