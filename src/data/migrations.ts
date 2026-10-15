@@ -1,0 +1,124 @@
+import { MAX_MINOR } from '../domain/money';
+import { Database, type SqlConnection } from './sql';
+
+export async function seedIncomeCategories(sql: SqlConnection): Promise<void> {
+  const categories = [['Allowance', 'allowance'], ['Salary', 'salary'], ['Freelance', 'work'], ['Gift', 'gift'], ['Other income', 'income']];
+  for (const [index, [name, icon]] of categories.entries()) {
+    await sql.runAsync("INSERT OR IGNORE INTO categories (id, profile_id, type, name, icon_key, color_token) SELECT ?, id, 'income', ?, ?, 'success' FROM profiles", `00000000-0000-4000-8000-${String(index + 200).padStart(12, '0')}`, name, icon);
+  }
+}
+
+export const SCHEMA_VERSION = 3;
+const schema = `
+CREATE TABLE profiles (
+  id TEXT PRIMARY KEY NOT NULL CHECK (id = '00000000-0000-4000-8000-000000000001'),
+  currency TEXT NOT NULL CHECK (currency = 'PHP'),
+  time_zone TEXT NOT NULL
+);
+CREATE TABLE accounts (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 60),
+  kind TEXT NOT NULL CHECK (kind IN ('cash','bank','ewallet')),
+  archived_at TEXT,
+  UNIQUE (id, profile_id)
+);
+CREATE TABLE categories (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  type TEXT NOT NULL CHECK (type = 'expense'),
+  name TEXT NOT NULL,
+  icon_key TEXT NOT NULL,
+  color_token TEXT NOT NULL,
+  archived_at TEXT,
+  UNIQUE (id, profile_id)
+);
+CREATE TABLE transactions (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  type TEXT NOT NULL CHECK (type IN ('expense','opening')),
+  occurred_at TEXT NOT NULL,
+  local_date TEXT NOT NULL CHECK (length(local_date) = 10),
+  time_zone TEXT NOT NULL,
+  offset_minutes INTEGER NOT NULL CHECK (offset_minutes BETWEEN -840 AND 840),
+  note TEXT NOT NULL CHECK (length(note) <= 500),
+  category_id TEXT,
+  revision INTEGER NOT NULL DEFAULT 1 CHECK (revision > 0),
+  FOREIGN KEY (category_id, profile_id) REFERENCES categories(id, profile_id),
+  CHECK ((type = 'expense' AND category_id IS NOT NULL) OR (type = 'opening' AND category_id IS NULL)),
+  UNIQUE (id, profile_id)
+);
+CREATE TABLE entries (
+  id TEXT PRIMARY KEY NOT NULL,
+  transaction_id TEXT NOT NULL UNIQUE,
+  profile_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND abs(amount_minor) <= ${MAX_MINOR}),
+  FOREIGN KEY (transaction_id, profile_id) REFERENCES transactions(id, profile_id),
+  FOREIGN KEY (account_id, profile_id) REFERENCES accounts(id, profile_id)
+);
+CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN
+  SELECT CASE WHEN
+    ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'expense' AND NEW.amount_minor >= 0)
+    OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'opening' AND NEW.amount_minor < 0)
+    THEN RAISE(ABORT, 'invalid entry sign') END;
+END;
+CREATE INDEX entries_account ON entries(account_id);
+CREATE INDEX transactions_date ON transactions(local_date DESC, occurred_at DESC, id DESC);
+CREATE INDEX transactions_category_date ON transactions(category_id, local_date);
+CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY NOT NULL, applied_at TEXT NOT NULL);
+`;
+
+export async function migrate(database: Database): Promise<void> {
+  await database.exclusive(sql => sql.execAsync('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'));
+  await database.transaction(async sql => {
+    const row = await sql.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    const version = row?.user_version ?? 0;
+    if (version > SCHEMA_VERSION) throw new Error('This database needs a newer version of Owllowance.');
+    if (version === 0) {
+      await sql.execAsync(schema);
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 1, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 1');
+    }
+    if (version < 2) {
+      // Preserve the immutable creation payload so retries remain safe after renaming.
+      await sql.execAsync("ALTER TABLE accounts ADD COLUMN opening_name TEXT NOT NULL DEFAULT ''; UPDATE accounts SET opening_name = name;");
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 2, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 2');
+    }
+    if (version < 3) {
+      // Rebuild constrained tables inside the same transaction, keeping foreign keys on.
+      await sql.execAsync(`
+        CREATE TEMP TABLE saved_categories AS SELECT * FROM categories ORDER BY rowid;
+        CREATE TEMP TABLE saved_transactions AS SELECT * FROM transactions ORDER BY rowid;
+        CREATE TEMP TABLE saved_entries AS SELECT * FROM entries ORDER BY rowid;
+        DROP TABLE entries;
+        DROP TABLE transactions;
+        DROP TABLE categories;
+      `);
+      const incomeSchema = schema.slice(schema.indexOf('CREATE TABLE categories'), schema.indexOf('CREATE TABLE schema_migrations'))
+        .replace("CHECK (type = 'expense')", "CHECK (type IN ('expense','income'))")
+        .replace("type IN ('expense','opening')", "type IN ('expense','income','opening')")
+        .replace("type = 'expense' AND category_id", "type IN ('expense','income') AND category_id")
+        .replace("OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'opening'", "OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'income' AND NEW.amount_minor <= 0) OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'opening'");
+      await sql.execAsync(incomeSchema);
+      await sql.execAsync(`
+        INSERT INTO categories SELECT * FROM saved_categories;
+        INSERT INTO transactions SELECT * FROM saved_transactions;
+        INSERT INTO entries SELECT * FROM saved_entries;
+        DROP TABLE saved_entries;
+        DROP TABLE saved_transactions;
+        DROP TABLE saved_categories;
+        CREATE TRIGGER validate_transaction_category BEFORE INSERT ON transactions
+        WHEN NEW.type IN ('expense','income') BEGIN
+          SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM categories WHERE id = NEW.category_id AND profile_id = NEW.profile_id AND type = NEW.type)
+          THEN RAISE(ABORT, 'invalid category type') END;
+        END;
+      `);
+      await seedIncomeCategories(sql);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 3, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 3');
+    }
+  });
+}
