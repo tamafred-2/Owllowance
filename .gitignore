@@ -46,3 +46,6 @@ yarn-error.*
 *.tsbuildinfo
 __pycache__/
 *.pyc
+
+# Packaged release APKs (uploaded to GitHub Releases, not committed)
+releases/

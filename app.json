@@ -2,7 +2,7 @@
   "expo": {
     "name": "Owllowance",
     "slug": "owllowance",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scheme": "owllowance",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -10,7 +10,8 @@
     },
     "android": {
       "package": "com.owllowance.app",
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +37,17 @@
         }
       ],
       "./plugins/with-native-loading.cjs",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "./plugins/with-release-signing.cjs"
     ],
     "experiments": {
       "typedRoutes": true
