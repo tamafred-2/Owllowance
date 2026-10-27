@@ -36,21 +36,23 @@ export function SheetHost({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
-  // Drag the handle down to close: far enough or a quick flick closes, otherwise it springs back.
+  // Dragging down (from the handle, or the content at its top): far enough or a quick flick closes, otherwise it springs back.
+  const dragMove = useCallback((dy: number) => drag.setValue(Math.max(0, dy)), [drag]);
+  const dragEnd = useCallback((dy: number, vy: number) => {
+    if (dy > 120 || (vy > 0.8 && dy > 20)) close();
+    else Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start();
+  }, [drag, close]);
   const handle = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
-    onPanResponderMove: (_, gesture) => drag.setValue(Math.max(0, gesture.dy)),
-    onPanResponderRelease: (_, gesture) => {
-      if (gesture.dy > 120 || (gesture.vy > 0.8 && gesture.dy > 20)) close();
-      else Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start();
-    },
-    onPanResponderTerminate: () => Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start(),
-  }), [drag, close]);
+    onPanResponderMove: (_, gesture) => dragMove(gesture.dy),
+    onPanResponderRelease: (_, gesture) => dragEnd(gesture.dy, gesture.vy),
+    onPanResponderTerminate: () => dragEnd(0, 0),
+  }), [dragMove, dragEnd]);
   const frame = useMemo<SheetFrame | null>(() => sheet ? {
     params: Object.fromEntries(Object.entries(sheet).filter(([key]) => key !== 'kind').map(([key, value]) => [key, value as string | undefined])),
-    close, replace: setSheet,
-  } : null, [sheet, close]);
+    close, replace: setSheet, dragMove, dragEnd,
+  } : null, [sheet, close, dragMove, dragEnd]);
   return <OpenContext.Provider value={setSheet}>
     {children}
     {toast ? <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, alignItems: 'center' }}>

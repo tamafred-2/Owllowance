@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { AppText, Button, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon, type IconName } from '../../../design-system/icon';
 import { categoryColors, useTheme } from '../../../design-system/theme';
@@ -14,6 +14,7 @@ import { WalletBadge } from '../../../components/wallet-card';
 import { useTransactionForm, type EntryDraft } from './use-entry-forms';
 import { leaveTo, originOf, type Origin } from './navigation';
 import { useSheetFrame } from './sheet-context';
+import { SheetScrollView } from './sheet-scroll-view';
 
 type Params = { mode?: string; walletId?: string; from?: string; edit?: string; duplicate?: string };
 
@@ -81,7 +82,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
   }
   const heading = editing ? (mode === 'expense' ? 'Edit expense' : 'Edit income') : mode === 'expense' ? 'Add an expense' : 'Add income';
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+    <SheetScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
         {!frame || editing ? <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           {frame ? <View /> : <Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />}
@@ -140,6 +141,6 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
         <Button label="Confirm delete" busy={deleting} onPress={() => { void remove(); }} />
         <Button label="Cancel" variant="quiet" disabled={deleting} onPress={() => setConfirmDelete(false)} />
       </AppModal> : null}
-    </ScrollView>
+    </SheetScrollView>
   </KeyboardAvoidingView>;
 }

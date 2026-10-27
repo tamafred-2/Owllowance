@@ -8,6 +8,7 @@ import { nextWalletName, walletPresets } from '../../../design-system/wallet-app
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTracker } from './tracker-context';
 import { useSheetFrame } from './sheet-context';
+import { SheetScrollView } from './sheet-scroll-view';
 
 export function NewWalletScreen() {
   const frame = useSheetFrame();
@@ -15,7 +16,7 @@ export function NewWalletScreen() {
   const form = useWalletSetup(() => leave('wallet'));
   const { colors } = useTheme();
   const { error, overview } = useTracker();
-  return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
+  return <SheetScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
       {frame ? null : <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Wallet" icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>}
       <AppText accessibilityRole="header" size={28} weight="600">Add a wallet</AppText>
@@ -48,5 +49,5 @@ export function NewWalletScreen() {
         <Button label="Create wallet" busy={form.busy} disabled={Boolean(error)} onPress={() => { void form.submit(); }} />
       </Surface>
     </View>
-  </ScrollView>;
+  </SheetScrollView>;
 }

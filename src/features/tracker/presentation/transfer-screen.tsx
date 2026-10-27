@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { AppText, Button, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { useTheme } from '../../../design-system/theme';
@@ -13,6 +13,7 @@ import { useTracker } from './tracker-context';
 import { useTransferForm } from './use-entry-forms';
 import { leaveTo, originOf } from './navigation';
 import { useSheetFrame } from './sheet-context';
+import { SheetScrollView } from './sheet-scroll-view';
 
 function amountOrZero(input: string): number {
   try { return input.trim() ? parseAmount(input, true) : 0; } catch { return 0; }
@@ -64,7 +65,7 @@ export function TransferScreen() {
   const amount = amountOrZero(form.amount), fee = amountOrZero(form.fee);
   const feeTooHigh = amount > 0 && fee > amount;
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+    <SheetScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
         {frame ? null : <View style={{ alignSelf: 'flex-start' }}><Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -95,6 +96,6 @@ export function TransferScreen() {
           <Button label="Save transfer" icon="check" busy={form.busy} disabled={Boolean(error) || feeTooHigh} onPress={() => { void form.submit(); }} />
         </Surface>
       </View>
-    </ScrollView>
+    </SheetScrollView>
   </KeyboardAvoidingView>;
 }
