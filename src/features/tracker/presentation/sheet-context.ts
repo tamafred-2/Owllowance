@@ -5,11 +5,7 @@ export type Sheet =
   | { kind: 'entry'; mode?: 'expense' | 'income'; walletId?: string; edit?: string; duplicate?: string }
   | { kind: 'transfer'; walletId?: string }
   | { kind: 'wallet' };
-// dragMove/dragEnd let the sheet's content pull the sheet down when it is scrolled to the top.
-export type SheetFrame = {
-  params: Record<string, string | undefined>; close: (saved?: string) => void; replace: (sheet: Sheet) => void;
-  dragMove: (dy: number) => void; dragEnd: (dy: number, vy: number) => void;
-};
+export type SheetFrame = { params: Record<string, string | undefined>; close: (saved?: string) => void; replace: (sheet: Sheet) => void };
 
 export const FrameContext = createContext<SheetFrame | null>(null);
 export const OpenContext = createContext<(sheet: Sheet) => void>(() => undefined);

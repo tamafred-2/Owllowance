@@ -81,7 +81,7 @@ export function TransferScreen() {
             </View>
           </View> : <WalletChoices hiddenIds={overview.settings.hiddenBalances} label="Send from" wallets={wallets} all={all} selected={form.fromWalletId} disabledId="" busy={form.busy}
             onSelect={id => { form.setFromWalletId(id); if (id === form.toWalletId) form.setToWalletId(''); }} />}
-          <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus editable={!form.busy}
+          <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus={!frame} editable={!form.busy}
             style={{ fontSize: 40, minHeight: 92, fontVariant: ['tabular-nums'] }} />
           <WalletChoices hiddenIds={overview.settings.hiddenBalances} label="Send to" wallets={fixedSource ? wallets.filter(wallet => wallet.id !== form.fromWalletId) : wallets} all={all} selected={form.toWalletId} disabledId={form.fromWalletId} onSelect={form.setToWalletId} busy={form.busy} />
           <FormField label="Transfer fee" placeholder="0.00" value={form.fee} onChangeText={form.setFee} keyboardType="decimal-pad" editable={!form.busy} />

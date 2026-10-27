@@ -101,7 +101,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
           </Pressable>)}
         </View> : null}
         <Surface style={{ gap: 24 }}>
-          <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus={!editing}
+          <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus={!editing && !frame}
             editable={!busy} style={{ fontSize: 40, minHeight: 92, fontVariant: ['tabular-nums'] }} />
           <View style={{ gap: 10 }}><AppText size={14} weight="500">Category</AppText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>

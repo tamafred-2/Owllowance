@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, View, useWindowDimensions } from 'react-native';
+import { BottomSheetBackdrop, BottomSheetModal, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { BackHandler, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../design-system/primitives';
 import { useTheme } from '../../../design-system/theme';
@@ -7,77 +8,61 @@ import { ExpenseScreen } from './expense-screen';
 import { TransferScreen } from './transfer-screen';
 import { NewWalletScreen } from './new-wallet-screen';
 import { savedMessages } from './saved-feedback';
-
 import { FrameContext, OpenContext, type Sheet, type SheetFrame } from './sheet-context';
 
-const NATIVE = Platform.OS !== 'web';
-
+// Entry forms as a bottom sheet over the current page. The sheet library runs the pan-to-close and
+// the form's scrolling together on the UI thread, so scrolling to the top and pulling on is one motion.
 export function SheetHost({ children }: { children: ReactNode }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const ref = useRef<BottomSheetModal>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [slide] = useState(() => new Animated.Value(1));
-  // Extra downward offset while the handle is dragged.
-  const [drag] = useState(() => new Animated.Value(0));
+  // Closing is requested through state; the effect talks to the sheet.
+  const [dismissals, setDismissals] = useState(0);
   const close = useCallback((saved?: string) => {
-    Animated.timing(slide, { toValue: 1, duration: 180, useNativeDriver: NATIVE }).start(() => setSheet(null));
     if (saved && savedMessages[saved]) setToast(savedMessages[saved]);
-  }, [slide]);
+    setDismissals(count => count + 1);
+  }, []);
+  useEffect(() => { if (dismissals) ref.current?.dismiss(); }, [dismissals]);
+  useEffect(() => { if (sheet) ref.current?.present(); }, [sheet]);
+  // Android back closes the sheet before leaving the page.
   useEffect(() => {
     if (!sheet) return;
-    slide.setValue(1);
-    drag.setValue(0);
-    Animated.timing(slide, { toValue: 0, duration: 240, useNativeDriver: NATIVE }).start();
-  }, [sheet, slide, drag]);
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => { close(); return true; });
+    return () => subscription.remove();
+  }, [sheet, close]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
-  // Dragging down (from the handle, or the content at its top): far enough or a quick flick closes, otherwise it springs back.
-  const dragMove = useCallback((dy: number) => drag.setValue(Math.max(0, dy)), [drag]);
-  const dragEnd = useCallback((dy: number, vy: number) => {
-    if (dy > 120 || (vy > 0.8 && dy > 20)) close();
-    else Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start();
-  }, [drag, close]);
-  const handle = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
-    onPanResponderMove: (_, gesture) => dragMove(gesture.dy),
-    onPanResponderRelease: (_, gesture) => dragEnd(gesture.dy, gesture.vy),
-    onPanResponderTerminate: () => dragEnd(0, 0),
-  }), [dragMove, dragEnd]);
   const frame = useMemo<SheetFrame | null>(() => sheet ? {
     params: Object.fromEntries(Object.entries(sheet).filter(([key]) => key !== 'kind').map(([key, value]) => [key, value as string | undefined])),
-    close, replace: setSheet, dragMove, dragEnd,
-  } : null, [sheet, close, dragMove, dragEnd]);
+    close, replace: setSheet,
+  } : null, [sheet, close]);
+  const backdrop = useCallback((props: BottomSheetBackdropProps) =>
+    <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.45} pressBehavior="close" accessibilityLabel="Close form" />, []);
+  const handle = useCallback(() => <View testID="sheet-handle" accessible accessibilityRole="button" accessibilityLabel="Drag down to close" onAccessibilityTap={() => close()}
+    style={{ height: 32, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border }} />
+  </View>, [colors.border, close]);
   return <OpenContext.Provider value={setSheet}>
-    {children}
-    {toast ? <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, alignItems: 'center' }}>
-      <View accessibilityLiveRegion="polite" style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, elevation: 4, boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
-        <AppText size={14} tone="success" weight="600">{toast}</AppText>
-      </View>
-    </View> : null}
-    {sheet && frame ? <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => close()}>
-      <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', opacity: slide.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close form" onPress={() => close()} style={{ flex: 1 }} />
-      </Animated.View>
-      <KeyboardAvoidingView pointerEvents="box-none" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Animated.View testID="entry-sheet" style={{ height: Math.min(height - insets.top - 24, height * 0.94), backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', paddingBottom: insets.bottom,
-          transform: [{ translateY: Animated.add(slide.interpolate({ inputRange: [0, 1], outputRange: [0, height] }), drag) }] }}>
-          <View {...handle.panHandlers} testID="sheet-handle" accessible accessibilityRole="button" accessibilityLabel="Drag down to close" onAccessibilityTap={() => close()}
-            style={{ height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border }} />
+      {children}
+      {toast ? <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, alignItems: 'center' }}>
+        <View accessibilityLiveRegion="polite" style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, elevation: 4, boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
+          <AppText size={14} tone="success" weight="600">{toast}</AppText>
+        </View>
+      </View> : null}
+      <BottomSheetModal ref={ref} snapPoints={['94%']} enableDynamicSizing={false} enablePanDownToClose topInset={insets.top}
+        onDismiss={() => setSheet(null)} backdropComponent={backdrop} handleComponent={handle}
+        keyboardBehavior="interactive" keyboardBlurBehavior="restore" android_keyboardInputMode="adjustResize"
+        backgroundStyle={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+        {sheet && frame ? <FrameContext.Provider value={frame}>
+          <View testID="entry-sheet" key={JSON.stringify(sheet)} style={{ flex: 1, paddingBottom: insets.bottom }}>
+            {sheet.kind === 'entry' ? <ExpenseScreen /> : sheet.kind === 'transfer' ? <TransferScreen /> : <NewWalletScreen />}
           </View>
-          <FrameContext.Provider value={frame}>
-            <View key={JSON.stringify(sheet)} style={{ flex: 1 }}>
-              {sheet.kind === 'entry' ? <ExpenseScreen /> : sheet.kind === 'transfer' ? <TransferScreen /> : <NewWalletScreen />}
-            </View>
-          </FrameContext.Provider>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal> : null}
+        </FrameContext.Provider> : null}
+      </BottomSheetModal>
   </OpenContext.Provider>;
 }

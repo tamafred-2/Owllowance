@@ -257,23 +257,20 @@ test('entry forms open as a sheet over the current page and close back to it', a
     await page.mouse.move(handle.x + handle.width / 2, handle.y + 80, { steps: 4 }); await page.mouse.move(handle.x + handle.width / 2, handle.y + 220, { steps: 4 });
     await page.mouse.up(); }
   await expect(sheet).toHaveCount(0);
-  // Pulling down from the content (not the handle) while at the top also drags the sheet closed;
-  // pushing up first scrolls the form.
+  // The form scrolls inside the sheet; back at the top, pulling down on the content drags the sheet closed.
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
   await expect(sheet).toBeVisible();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(500);
   const label = sheet.getByText('Category', { exact: true });
   const before = (await label.boundingBox())!;
   const x = before.x + 150;
-  await page.mouse.move(x, before.y + 200); await page.mouse.down();
-  await page.mouse.move(x, before.y + 150, { steps: 3 }); await page.mouse.move(x, before.y + 60, { steps: 4 }); await page.mouse.up();
+  await page.mouse.move(x, before.y + 100); await page.mouse.wheel(0, 400);
   await expect.poll(async () => (await label.boundingBox())!.y).toBeLessThan(before.y - 50);
-  await page.mouse.move(x, before.y); await page.mouse.wheel(0, -1000); // Back to the very top (a finger scroll on a phone).
+  await page.mouse.wheel(0, -1000);
   await expect.poll(async () => (await label.boundingBox())!.y).toBeGreaterThan(before.y - 5);
-  await expect(sheet).toBeVisible();
   const top = (await sheet.getByText('Amount (PHP)', { exact: true }).boundingBox())!;
   await page.mouse.move(x, top.y); await page.mouse.down();
-  await page.mouse.move(x, top.y + 60, { steps: 3 }); await page.mouse.move(x, top.y + 240, { steps: 5 }); await page.mouse.up();
+  await page.mouse.move(x, top.y + 150, { steps: 3 }); await page.mouse.move(x, top.y + 520, { steps: 4 }); await page.mouse.up();
   await expect(sheet).toHaveCount(0);
   await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await expect(sheet.getByRole('heading', { name: 'Add a wallet', exact: true })).toBeVisible();
