@@ -16,7 +16,8 @@ test('Accounts creates wallets, selects expense account and preserves totals aft
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await expect(page.getByText('Test bank', { exact: true })).toBeVisible();
   await expect(page.getByText('₱300.00', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('20');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('radio', { name: 'Wallet: Test bank', exact: true }).click();
@@ -56,7 +57,7 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await page.getByRole('button', { name: 'Confirm archive', exact: true }).click();
   await expect(page.getByText('Archived wallets', { exact: true })).toBeVisible();
   await expect(page.getByText('Start with one wallet.')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Add transaction', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add transaction', exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(page.getByText('Payments due', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
@@ -66,7 +67,8 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await page.getByRole('button', { name: 'Wallet options: Everyday', exact: true }).click();
   await page.getByRole('button', { name: 'Restore wallet', exact: true }).click();
   await expect(page.getByText('Archived wallets', { exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await expect(page.getByRole('radio', { name: 'Wallet: Everyday', exact: true })).toBeVisible();
 });
 
@@ -115,7 +117,7 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
     await expect(page.getByLabel('Wallet name', { exact: true })).toHaveValue(name);
     await page.getByLabel('Wallet name', { exact: true }).focus();
     await expect(page.getByTestId('bottom-navigation')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Add transaction', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add transaction', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   }
   await page.getByRole('link', { name: 'Manage GCash 2', exact: true }).click();
@@ -129,7 +131,8 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await page.getByRole('button', { name: 'Back to Wallet', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Manage GCash', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Manage GCash 2', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await expect(page.getByTestId('bottom-navigation')).toHaveCount(0);
   await expect(page.getByRole('radio', { name: 'Wallet: GCash 2', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to Home', exact: true }).click();

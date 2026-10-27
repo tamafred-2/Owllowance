@@ -26,7 +26,7 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await page.mouse.move(before.x + 24, before.y + 24, { steps: 10 });
   await page.mouse.up();
   const navigation = page.getByTestId('bottom-navigation');
-  const add = navigation.getByRole('link', { name: 'Add transaction', exact: true });
+  const add = navigation.getByRole('button', { name: 'Add transaction', exact: true });
   const barBox = (await navigation.boundingBox())!;
   const addBox = (await add.boundingBox())!;
   expect(addBox.width).toBeGreaterThanOrEqual(48);
@@ -45,14 +45,16 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await page.screenshot({ path: testInfo.outputPath('home-top-light.png'), fullPage: true });
   await page.getByText('Payments due', { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('home-today-light.png'), fullPage: true });
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByRole('tab', { name: 'Income', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('200');
   await page.getByRole('radio', { name: 'Allowance', exact: true }).click();
   await page.getByRole('button', { name: 'Save income', exact: true }).click();
   await expect(page.getByTestId('today-net')).toContainText('₱200.00');
   await expect(page.getByText('Net increase today', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('button', { name: 'Save expense', exact: true }).click();

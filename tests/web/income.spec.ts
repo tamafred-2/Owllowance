@@ -12,7 +12,8 @@ test('income and expense tabs retain drafts and post to the selected wallet offl
   await page.getByLabel('Wallet name', { exact: true }).fill('Income bank');
   await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('0');
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('20');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('radio', { name: 'Wallet: Income bank', exact: true }).click();
@@ -37,7 +38,8 @@ test('income and expense tabs retain drafts and post to the selected wallet offl
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await expect(page.getByText('₱100.00', { exact: true })).toBeVisible();
   await expect(page.getByText('₱250.25', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('20');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('radio', { name: 'Wallet: Income bank', exact: true }).click();

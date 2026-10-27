@@ -15,7 +15,8 @@ async function setup(page: Page) {
 }
 
 async function addExpense(page: Page, amount: string, category = 'Food & drink') {
-  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill(amount);
   await page.getByRole('radio', { name: category, exact: true }).click();
   await page.getByRole('radio', { name: 'Wallet: Cash', exact: true }).click();
@@ -239,4 +240,29 @@ test('wallet list, grid and swipeable card views; choice is remembered', async (
   await page.waitForTimeout(400); // Let the swipe settle; a tap ending a swipe is intentionally ignored.
   await front.click();
   await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toBeVisible();
+});
+
+test('owl Add button opens a menu for expense, income, transfer and wallet', async ({ page }, testInfo) => {
+  await setup(page);
+  const add = page.getByRole('button', { name: 'Add transaction', exact: true });
+  await add.click();
+  const menu = page.getByTestId('add-menu');
+  await expect(menu).toBeVisible();
+  for (const label of ['Add expense', 'Add income', 'Transfer', 'Add wallet']) await expect(page.getByRole('menuitem', { name: label, exact: true })).toBeVisible();
+  const menuBox = (await menu.boundingBox())!, addBox = (await add.boundingBox())!;
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(addBox.y + 4); // Opens above the button.
+  await page.screenshot({ path: testInfo.outputPath('add-menu.png') });
+  await page.getByRole('button', { name: 'Close add menu', exact: true }).click({ position: { x: 10, y: 10 } });
+  await expect(menu).toHaveCount(0);
+  await add.click();
+  await page.getByRole('menuitem', { name: 'Add income', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Income', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Back to Home', exact: true }).click();
+  await add.click();
+  await page.getByRole('menuitem', { name: 'Transfer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Transfer', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Home', exact: true }).click();
+  await add.click();
+  await page.getByRole('menuitem', { name: 'Add wallet', exact: true }).click();
+  await expect(page.getByLabel('Wallet name', { exact: true })).toBeVisible();
 });
