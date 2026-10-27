@@ -5,6 +5,7 @@ import { AppText, Button, Feedback, ToggleRow } from '../../../design-system/pri
 import { eventTime } from '../../../domain/date';
 import { REMINDER_HOUR, reminderPlan, type ReminderPlan } from '../../../domain/reminders';
 import { clearReminders, enableReminders, replaceReminders } from '../../../platform/notifications';
+import { updateWidgets } from '../../../platform/widgets';
 import { PaymentsDue } from './payments-due';
 import { useTracker } from './tracker-context';
 
@@ -23,6 +24,10 @@ export function useReminderSync(): void {
     const items = JSON.parse(plan) as ReminderPlan[];
     void replaceReminders(items.map(item => ({ title: item.title, body: item.body, at: atReminderHour(item.localDate) }))).catch(() => undefined);
   }, [plan]);
+  // Home-screen widgets follow the same data (due list and net worth).
+  useEffect(() => {
+    if (overview) void updateWidgets(overview).catch(() => undefined);
+  }, [overview]);
 }
 
 export function ReminderToggle() {

@@ -103,3 +103,15 @@ test('reminders group one notification per day, fold overdue into today and neve
   ]);
   assert.ok(plan.every(item => !/₱|999/.test(item.body)));
 });
+
+test('widget rows fit the widget height and the balance respects the hidden setting', async t => {
+  const f = await withRule(); t.after(() => f.connection.sqlite.close());
+  const { dueRows, balanceText } = await import('../src/widgets/widget-data');
+  const view = await f.repository.overview();
+  assert.deepEqual(dueRows(view, 110).rows.map(row => [row.name, row.when, row.overdue]), [['Internet', 'Overdue', true], ['Internet', 'Today', false]]);
+  assert.equal(dueRows(view, 110).more, 1);
+  assert.equal(dueRows(view, 40).rows.length, 1); // Always at least one row.
+  assert.match(balanceText(view), /^₱/);
+  await f.repository.setBalanceHidden('net-worth', true);
+  assert.equal(balanceText(await f.repository.overview()), '₱ ••••');
+});

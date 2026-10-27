@@ -47,7 +47,46 @@
           }
         }
       ],
-      "./plugins/with-release-signing.cjs"
+      "./plugins/with-release-signing.cjs",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PaymentsDue",
+              "label": "Payments due",
+              "description": "What is due this week",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "QuickAdd",
+              "label": "Add expense",
+              "description": "Owl button that adds an expense",
+              "minWidth": "57dp",
+              "minHeight": "57dp",
+              "targetCellWidth": 1,
+              "targetCellHeight": 1,
+              "resizeMode": "none"
+            },
+            {
+              "name": "Balance",
+              "label": "Net worth",
+              "description": "Your total, hidden when you hide it in the app",
+              "minWidth": "110dp",
+              "minHeight": "57dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
