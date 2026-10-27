@@ -2,7 +2,7 @@ import { AnchoredMenu, type MenuAnchor } from '../../../components/anchored-menu
 import { AppModal } from '../../../components/app-modal';
 import { HeaderActions } from '../../../components/header-actions';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppText, Button, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
@@ -17,6 +17,9 @@ import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
 import { RenameWalletModal } from './rename-wallet-modal';
 import { BalanceEye } from './balance-eye';
+
+// The card left in front survives leaving the screen (memory) and restarts (settings).
+let lastDeckWallet: string | null = null;
 
 export function AccountsScreen() {
   const { overview, service, refresh, error: storageError } = useTracker();
@@ -43,6 +46,10 @@ export function AccountsScreen() {
   const compact = width >= 370 && fontScale <= 1.15 && ![...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])].some(wallet => Math.abs(wallet.balanceMinor) >= 1000000000);
   const [sceneVisible, setSceneVisible] = useState(true);
   const [deckDragging, setDeckDragging] = useState(false);
+  const rememberDeckWallet = useCallback((walletId: string) => {
+    lastDeckWallet = walletId;
+    void service?.repository.saveSettings({ deckWallet: walletId }).catch(() => undefined);
+  }, [service]);
   if (!overview) return null;
   const view = overview.settings.walletView;
   const allWallets = [...overview.wallets, ...overview.archivedWallets];
@@ -86,7 +93,9 @@ export function AccountsScreen() {
           <AppText size={14} weight="600" style={{ color: colors.accent }}>Add wallet</AppText>
         </Pressable></Link>
       </View>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Wallet view" style={{ flexDirection: 'row', alignSelf: 'flex-end', gap: 2, padding: 3, borderRadius: 12, backgroundColor: colors.muted, marginTop: -8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: -8 }}>
+      <AppText testID="wallet-view-label" size={13} weight="600" tone="secondary">{{ list: 'List view', grid: 'Grid view', cards: 'Card view' }[view]}</AppText>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Wallet view" style={{ flexDirection: 'row', gap: 2, padding: 3, borderRadius: 12, backgroundColor: colors.muted }}>
         {([['list', 'viewList', 'List view'], ['grid', 'viewGrid', 'Grid view'], ['cards', 'viewCards', 'Card view']] as const).map(([value, icon, name]) =>
           <Pressable key={value} accessibilityRole="radio" accessibilityLabel={name} accessibilityState={{ checked: view === value }} aria-checked={view === value}
             onPress={() => { if (view !== value && service) void service.repository.saveSettings({ walletView: value }).then(refresh, () => undefined); }}
@@ -94,7 +103,9 @@ export function AccountsScreen() {
             <AppIcon name={icon} size={18} color={view === value ? colors.accent : colors.textSecondary} />
           </Pressable>)}
       </View>
-      {view === 'cards' ? <WalletDeck wallets={overview.wallets} onDragChange={setDeckDragging} {...viewProps} /> : (['cash', 'ewallet', 'bank'] as WalletKind[]).map(kind => {
+      </View>
+      {view === 'cards' ? <WalletDeck wallets={overview.wallets} onDragChange={setDeckDragging} initialWalletId={lastDeckWallet ?? overview.settings.deckWallet} onFrontChange={rememberDeckWallet}
+        onOpen={wallet => router.push({ pathname: '/wallet-manage', params: { id: wallet.id } })} {...viewProps} /> : (['cash', 'ewallet', 'bank'] as WalletKind[]).map(kind => {
         const wallets = overview.wallets.filter(wallet => wallet.kind === kind);
         if (!wallets.length) return null;
         return <View key={kind} style={{ gap: view === 'list' ? 4 : 12 }}>

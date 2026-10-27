@@ -200,22 +200,26 @@ test('wallet list, grid and swipeable card views; choice is remembered', async (
   await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('₱200.00');
   await page.screenshot({ path: testInfo.outputPath('wallet-list.png'), fullPage: true });
   await page.getByRole('radio', { name: 'Card view', exact: true }).click();
-  const position = page.getByTestId('wallet-deck-position');
-  await expect(position).toHaveText('1 of 2');
+  await expect(page.getByTestId('wallet-view-label')).toHaveText('Card view');
+  const front = page.getByTestId('wallet-deck-front');
+  await expect(front).toContainText('Cash');
   await page.screenshot({ path: testInfo.outputPath('wallet-cards.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Next wallet', exact: true }).click();
-  await expect(position).toHaveText('2 of 2');
+  await expect(page.getByText(/ of 2$/)).toHaveCount(0); // No position counter or arrows.
   const box = (await page.getByTestId('wallet-deck').boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.6);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7 - 60, { steps: 4 });
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7 - 140, { steps: 4 });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.6 - 60, { steps: 4 });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.6 - 140, { steps: 4 });
   await page.mouse.up();
-  await expect(position).toHaveText('1 of 2'); // Swipe up wraps to the first wallet.
+  await expect(front).toContainText('Savings');
+  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toHaveCount(0); // The swipe didn't open it.
   await expect(page.getByTestId('wallet-deck')).not.toContainText(/\d{4} \d{4}/); // No card-number style text.
-  await page.getByRole('link', { name: 'Manage Cash', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(front).toContainText('Savings'); // Stays where it was left.
   await page.reload();
-  await page.getByRole('button', { name: 'Back to Wallet', exact: true }).click();
+  await expect(front).toContainText('Savings'); // Also after restarting.
   await expect(page.getByRole('radio', { name: 'Card view', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await front.click();
+  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toBeVisible();
 });

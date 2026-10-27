@@ -3,7 +3,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode
 import { Animated, PanResponder, Platform, Pressable, View } from 'react-native';
 import type { Wallet } from '../domain/ledger';
 import { walletKindLabels } from '../domain/ledger';
-import { AppText, Button, MoneyText } from '../design-system/primitives';
+import { AppText, MoneyText } from '../design-system/primitives';
 import { AppIcon } from '../design-system/icon';
 import { useTheme } from '../design-system/theme';
 import { walletAppearance } from '../design-system/wallet-appearance';
@@ -54,28 +54,37 @@ const PEEK = 20;
 const SWIPE = 60;
 
 // One wallet in front with up to two peeking behind; swipe up for the next, down for the previous.
-export function WalletDeck({ wallets, label, onMenu, hidden, balanceToggle, onDragChange }: ViewProps & { wallets: Wallet[]; onDragChange: (dragging: boolean) => void }) {
+// `initialWalletId` and `onFrontChange` let the screen remember which wallet was left in front.
+export function WalletDeck({ wallets, label, onMenu, hidden, balanceToggle, onDragChange, initialWalletId, onFrontChange, onOpen }: ViewProps & {
+  wallets: Wallet[]; onDragChange: (dragging: boolean) => void; initialWalletId: string | null; onFrontChange: (walletId: string) => void; onOpen: (wallet: Wallet) => void;
+}) {
   const [width, setWidth] = useState(0);
-  const [index, setIndex] = useState(0);
+  const [frontId, setFrontId] = useState(initialWalletId);
   const [drag] = useState(() => new Animated.Value(0));
   // Web fires a click when a drag ends on the card link; ignore it.
   const draggedRef = useRef(false);
   const swallowPress = useCallback(() => draggedRef.current, []);
   const count = wallets.length;
-  const current = count ? index % count : 0;
+  const current = Math.max(0, wallets.findIndex(wallet => wallet.id === frontId));
   const cardWidth = Math.min(width, 380);
   const cardHeight = cardWidth / 1.586;
+  const frontWallet = count ? wallets[current] : undefined;
   // Reset after the next card is in front, so the old front never flashes back.
-  useLayoutEffect(() => { drag.setValue(0); }, [current, drag]);
+  useLayoutEffect(() => { drag.setValue(0); }, [frontId, drag]);
   const step = useCallback((direction: 1 | -1) => {
     if (count < 2) return;
     Animated.timing(drag, { toValue: direction === 1 ? -cardHeight : PEEK * 3, duration: 180, useNativeDriver: false })
-      .start(() => setIndex(value => (value + direction + count) % count));
-  }, [count, cardHeight, drag]);
+      .start(() => {
+        const next = wallets[(current + direction + count) % count].id;
+        setFrontId(next);
+        onFrontChange(next);
+      });
+  }, [count, cardHeight, drag, wallets, current, onFrontChange]);
   // The gesture handlers read draggedRef only when a swipe fires, never while rendering.
   // eslint-disable-next-line react-hooks/refs
   const responder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dy) > 8 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    // Claim vertical movement early so the page scroll can't take the swipe first.
+    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.5,
     onPanResponderGrant: () => { draggedRef.current = true; onDragChange(true); },
     onPanResponderMove: (_, gesture) => drag.setValue(Math.max(Math.min(gesture.dy, PEEK * 3), -400)),
     onPanResponderRelease: (_, gesture) => {
@@ -83,11 +92,15 @@ export function WalletDeck({ wallets, label, onMenu, hidden, balanceToggle, onDr
       setTimeout(() => { draggedRef.current = false; }, 100);
       if (gesture.dy < -SWIPE) step(1);
       else if (gesture.dy > SWIPE) step(-1);
-      else Animated.spring(drag, { toValue: 0, useNativeDriver: false }).start();
+      else {
+        Animated.spring(drag, { toValue: 0, useNativeDriver: false }).start();
+        // A tap that wobbled a few points still opens the wallet.
+        if (Math.abs(gesture.dy) < 10 && Math.abs(gesture.dx) < 10 && frontWallet) onOpen(frontWallet);
+      }
     },
     onPanResponderTerminate: () => { draggedRef.current = false; onDragChange(false); Animated.spring(drag, { toValue: 0, useNativeDriver: false }).start(); },
     onPanResponderTerminationRequest: () => false,
-  }), [drag, onDragChange, step]);
+  }), [drag, onDragChange, step, frontWallet, onOpen]);
   if (!count) return null;
   const visible = Array.from({ length: Math.min(3, count) }, (_, depth) => ({ wallet: wallets[(current + depth) % count], depth }));
   const progress = cardHeight ? drag.interpolate({ inputRange: [-cardHeight, 0], outputRange: [1, 0], extrapolate: 'clamp' }) : drag;
@@ -100,21 +113,17 @@ export function WalletDeck({ wallets, label, onMenu, hidden, balanceToggle, onDr
         const transform = front
           ? [{ translateY: drag }]
           : [{ translateY: Animated.subtract(depth * PEEK, Animated.multiply(progress, PEEK)) }, { scale: Animated.add(1 - depth * 0.05, Animated.multiply(progress, 0.05)) }];
-        return <Animated.View key={wallet.id} pointerEvents={front ? 'auto' : 'none'} importantForAccessibility={front ? 'auto' : 'no-hide-descendants'}
+        return <Animated.View key={wallet.id} testID={front ? 'wallet-deck-front' : undefined} pointerEvents={front ? 'auto' : 'none'} importantForAccessibility={front ? 'auto' : 'no-hide-descendants'}
           style={{ position: 'absolute', top: 0, width: cardWidth, height: cardHeight, transform, opacity: front ? progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) : 1 - depth * 0.15 }}>
-          <DeckCard wallet={wallet} label={label} onMenu={onMenu} hidden={hidden} balanceToggle={balanceToggle} swallowPress={swallowPress} />
+          <DeckCard wallet={wallet} label={label} onMenu={onMenu} hidden={hidden} balanceToggle={balanceToggle} swallowPress={swallowPress} onStep={front && count > 1 ? step : undefined} />
         </Animated.View>;
       }) : null}
     </View>
-    {count > 1 ? <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-      <Button label="Previous wallet" icon="up" iconOnly variant="quiet" onPress={() => step(-1)} />
-      <AppText testID="wallet-deck-position" size={13} tone="secondary">{`${current + 1} of ${count}`}</AppText>
-      <Button label="Next wallet" icon="down" iconOnly variant="quiet" onPress={() => step(1)} />
-    </View> : null}
   </View>;
 }
 
-function DeckCard({ wallet, label, onMenu, hidden, balanceToggle, swallowPress }: ViewProps & { wallet: Wallet; swallowPress: () => boolean }) {
+// Screen readers switch cards with the standard adjust (swipe up/down) actions on the front card.
+function DeckCard({ wallet, label, onMenu, hidden, balanceToggle, swallowPress, onStep }: ViewProps & { wallet: Wallet; swallowPress: () => boolean; onStep?: (direction: 1 | -1) => void }) {
   const palette = walletAppearance(wallet.name, wallet.kind);
   const name = label(wallet);
   // Solid wallet color with faint shapes; deliberately no card number, chip or expiry.
@@ -122,7 +131,9 @@ function DeckCard({ wallet, label, onMenu, hidden, balanceToggle, swallowPress }
     <View accessible={false} style={{ position: 'absolute', width: 220, height: 220, borderRadius: 110, right: -70, top: -90, backgroundColor: 'rgba(255,255,255,0.08)' }} />
     <View accessible={false} style={{ position: 'absolute', width: 160, height: 160, borderRadius: 80, right: 30, bottom: -100, backgroundColor: 'rgba(255,255,255,0.06)' }} />
     <Link href={{ pathname: '/wallet-manage', params: { id: wallet.id } }} asChild onPress={event => { if (swallowPress()) event.preventDefault(); }}>
-      <Pressable ref={undraggable} accessibilityRole="link" accessibilityLabel={`Manage ${name}`} style={{ flex: 1, padding: 20, justifyContent: 'space-between' }}>
+      <Pressable ref={undraggable} accessibilityRole="link" accessibilityLabel={`Manage ${name}`} style={{ flex: 1, padding: 20, justifyContent: 'space-between' }}
+        accessibilityActions={onStep ? [{ name: 'increment', label: 'Next wallet' }, { name: 'decrement', label: 'Previous wallet' }] : undefined}
+        onAccessibilityAction={event => onStep?.(event.nativeEvent.actionName === 'increment' ? 1 : -1)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 36 }}>
           <WalletBadge name={wallet.name} kind={wallet.kind} />
           <View style={{ flex: 1 }}>

@@ -33,9 +33,10 @@ export type Budget = {
 export type ThemePreference = 'system' | 'light' | 'dark';
 // hiddenBalances: wallet IDs (or NET_WORTH) whose balance is masked on screen.
 export type WalletView = 'grid' | 'list' | 'cards';
-export type Settings = { theme: ThemePreference; walletView: WalletView; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
+// deckWallet: the wallet last left in front of the card view.
+export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
 export const NET_WORTH = 'net-worth';
-export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
+export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
 export type Overview = {
   wallet: Wallet | null;
   wallets: Wallet[];
