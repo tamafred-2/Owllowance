@@ -28,7 +28,10 @@ function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activit
       backgroundColor: active && !compact ? tint : 'transparent',
     }}>
       {({ pressed }) => <>
-        <View style={compact ? { width: 56, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: active || pressed ? tint : 'transparent', opacity: pressed ? 0.7 : 1 } : undefined}>
+        <View style={compact ? { width: 56, height: 32, alignItems: 'center', justifyContent: 'center' } : undefined}>
+          {/* Mounted fresh when shown: Android can drop the corner radius when a background is toggled on an existing view. */}
+          {compact && (active || pressed) ? <View key={active ? 'active' : 'pressed'} pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, width: 56, height: 32, borderRadius: 16, backgroundColor: tint, opacity: pressed && !active ? 0.7 : 1 }} /> : null}
           <AppIcon name={icon} size={active ? 22 : 20} color={active ? colors.accent : colors.textSecondary} />
         </View>
         <AppText size={compact ? 11 : 14} weight={active ? '700' : '400'} style={{ color: active ? colors.accent : colors.textSecondary }}>{label}</AppText>
