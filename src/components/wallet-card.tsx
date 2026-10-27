@@ -1,34 +1,21 @@
 import { Link } from 'expo-router';
 import { useRef, type ReactNode } from 'react';
 import type { MenuAnchor } from './anchored-menu';
-import { Image, Pressable, View, type ImageSourcePropType } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { Wallet } from '../domain/ledger';
 import { walletKindLabels } from '../domain/ledger';
 import { AppText, MoneyText } from '../design-system/primitives';
 import { AppIcon } from '../design-system/icon';
-import { goTymeBadgeColor, walletAppearance } from '../design-system/wallet-appearance';
-import { SvgXml } from 'react-native-svg';
-import { goTymeLogo } from '../design-system/provider-vectors';
+import { walletAppearance } from '../design-system/wallet-appearance';
 
-const providerIcons: Record<string, ImageSourcePropType> = {
-  GCash: require('../../assets/providers/gcash.png'),
-  Maya: require('../../assets/providers/maya-app.jpg'),
-  BPI: require('../../assets/providers/bpi.png'),
-  MariBank: require('../../assets/providers/maribank.png'),
-  Wise: require('../../assets/providers/wise.png'),
-  Metrobank: require('../../assets/providers/metrobank.png'),
-  PayPal: require('../../assets/providers/paypal.png'),
-  BDO: require('../../assets/providers/bdo.jpg'),
-  UnionBank: require('../../assets/providers/unionbank.jpg'),
-};
-
+// Presets show short letters in the card's colors (no third-party logos are bundled); other wallets show the wallet icon.
 export function WalletBadge({ name, kind }: Pick<Wallet, 'name' | 'kind'>) {
   const palette = walletAppearance(name, kind);
-  const official = Boolean(providerIcons[palette.name]);
-  const wordmark = palette.name === 'Metrobank';
-  const backgroundColor = palette.name === 'GoTyme' ? goTymeBadgeColor : official && palette.name !== 'Metrobank' ? '#FFFFFF' : palette.color;
-  return <View style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 9, overflow: 'hidden', backgroundColor, alignItems: 'center', justifyContent: 'center' }}>
-    {palette.name === 'GoTyme' ? <SvgXml xml={goTymeLogo} width={32} height={28} accessible={false} /> : providerIcons[palette.name] ? <Image source={providerIcons[palette.name]} accessible={false} style={{ width: wordmark ? 32 : 36, height: wordmark ? 28 : 36, borderRadius: wordmark ? 0 : 9 }} resizeMode="contain" /> : <AppIcon name="wallet" size={19} color={palette.ink} />}
+  // Solid brand color so it reads on any surface; the faint ring separates it from its own card.
+  const ring = palette.ink === '#FFFFFF' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.15)';
+  return <View style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 9, backgroundColor: palette.color, borderWidth: palette.badge ? 1 : 0, borderColor: ring, alignItems: 'center', justifyContent: 'center' }}>
+    {palette.badge ? <AppText accessible={false} size={palette.badge.length > 2 ? 11 : palette.badge.length > 1 ? 13 : 16} weight="700" style={{ color: palette.ink }}>{palette.badge}</AppText>
+      : <AppIcon name="wallet" size={19} color={palette.ink} />}
   </View>;
 }
 

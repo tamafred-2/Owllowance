@@ -2,7 +2,7 @@
   "expo": {
     "name": "Owllowance",
     "slug": "owllowance",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "scheme": "owllowance",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -11,7 +11,14 @@
     "android": {
       "package": "com.owllowance.app",
       "predictiveBackGestureEnabled": true,
-      "versionCode": 3
+      "versionCode": 4,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ]
     },
     "web": {
       "bundler": "metro",

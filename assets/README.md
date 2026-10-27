@@ -13,7 +13,6 @@ App-ready artwork is grouped by purpose. Use semantic imports from `src/design-s
 | `previews/` | Standalone [owl](previews/mascot/index.html) and [opening](previews/opening/index.html) demos |
 | `reference/` | Original handoff notes, proposed tokens and original manifests |
 | `licenses/` | Supplied third-party license notices |
-| `providers/` | Local provider website icons; separate source/hash inventory and usage notes |
 
 [manifest.json](manifest.json) lists current artwork paths, dimensions, frames, sizes, hashes and provenance. Original reference documents retain historical pack paths; use this README and the root manifest for current locations.
 

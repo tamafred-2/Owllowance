@@ -1,7 +1,5 @@
 import type { Wallet, WalletKind } from '../domain/ledger';
 
-export const goTymeBadgeColor = '#00DCE5';
-
 export function nextWalletName(base: string, wallets: Wallet[]) {
   const names = new Set(wallets.map(wallet => wallet.name.trim().toLowerCase()));
   let name = base;
@@ -19,10 +17,10 @@ export function walletLabel(wallet: Wallet, wallets: Wallet[]) {
   return `${wallet.name} (${wallet.id.slice(-length).toUpperCase()})`;
 }
 
-// Cosmetic name presets only. Never used to calculate balances or identify accounts.
+// Cosmetic name presets only (colors and letters; no third-party logos). Never used to calculate balances or identify accounts.
 export const walletPresets: { name: string; kind: WalletKind; color: string; ink: string; badge: string }[] = [
   { name: 'GCash', kind: 'ewallet', color: '#125AC8', ink: '#FFFFFF', badge: 'G' },
-  { name: 'Maya', kind: 'ewallet', color: '#075C3D', ink: '#FFFFFF', badge: 'maya' },
+  { name: 'Maya', kind: 'ewallet', color: '#075C3D', ink: '#FFFFFF', badge: 'Ma' },
   { name: 'BPI', kind: 'bank', color: '#A52336', ink: '#FFFFFF', badge: 'BPI' },
   { name: 'MariBank', kind: 'bank', color: '#FFBD80', ink: '#42260F', badge: 'M' },
   { name: 'BDO', kind: 'bank', color: '#124879', ink: '#FFFFFF', badge: 'BDO' },

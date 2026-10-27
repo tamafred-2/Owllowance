@@ -33,3 +33,9 @@ npm start          # Expo development server
 npm run web        # browser version
 npm test           # unit tests
 ```
+
+## License and disclaimer
+
+© 2026 Al Fred. All rights reserved; see [LICENSE](LICENSE). Open-source components keep their own licenses, listed in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) and in the app under **Settings → Open-source licenses**.
+
+Owllowance is provided as is, without warranty. It is a personal record-keeping tool, not financial advice, and it is not affiliated with or endorsed by any bank or e-wallet provider whose name you may enter.

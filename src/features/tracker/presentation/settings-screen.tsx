@@ -139,7 +139,12 @@ export function SettingsScreen() {
         <Button label="Restore from backup" icon="upload" variant="secondary" busy={busy === 'pick'} disabled={disabled} onPress={() => { void chooseBackup(); }} />
         {overview?.restoreSnapshotAt ? <Button label="Undo last restore" icon="undo" variant="quiet" disabled={disabled} onPress={() => setConfirmUndo(true)} /> : null}
       </Surface>
-      <AppText size={12} tone="secondary" style={{ textAlign: 'center' }}>{`Owllowance ${appVersion}`}</AppText>
+      <Surface style={{ gap: 10 }}>
+        <AppText size={18} weight="600">About</AppText>
+        <AppText size={13} tone="secondary">Owllowance is a personal record-keeping tool, provided as is without warranty. It is not financial advice and is not affiliated with any bank or e-wallet.</AppText>
+        <Button label="Open-source licenses" icon="next" variant="quiet" onPress={() => router.push('/licenses')} />
+      </Surface>
+      <AppText size={12} tone="secondary" style={{ textAlign: 'center' }}>{`Owllowance ${appVersion} · © 2026 Al Fred`}</AppText>
     </View>
     {guideOpen ? <GettingStarted onDone={() => setGuideOpen(false)} /> : null}
     <AppModal title="Replace data with this backup?" visible={Boolean(pending)} onClose={() => { if (!busy) setPending(null); }}>
