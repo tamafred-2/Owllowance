@@ -1,0 +1,157 @@
+import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+async function setup(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('1000');
+  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await page.getByRole('link', { name: 'Add wallet', exact: true }).click();
+  await page.getByLabel('Wallet name', { exact: true }).fill('Savings');
+  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('200');
+  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+}
+
+async function addExpense(page: Page, amount: string, category = 'Food & drink') {
+  await page.getByRole('link', { name: 'Add transaction', exact: true }).click();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill(amount);
+  await page.getByRole('radio', { name: category, exact: true }).click();
+  await page.getByRole('radio', { name: 'Wallet: Cash', exact: true }).click();
+  await page.getByRole('button', { name: 'Save expense', exact: true }).click();
+  await expect(page.getByText('Expense saved.', { exact: true })).toBeVisible();
+}
+
+test('transfer with fee moves money, appears once in history and can be deleted', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Transfer', exact: true }).click();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
+  await page.getByRole('radio', { name: 'From: Cash', exact: true }).click();
+  await page.getByRole('radio', { name: 'To: Savings', exact: true }).click();
+  await page.getByRole('button', { name: 'Add fee, date or note', exact: true }).click();
+  await page.getByLabel('Transfer fee (optional)', { exact: true }).fill('15');
+  await expect(page.getByTestId('transfer-preview')).toContainText('-₱315.00');
+  await page.screenshot({ path: testInfo.outputPath('transfer-form.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Save transfer', exact: true }).click();
+  await expect(page.getByText('Transfer saved.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('685.00');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('500.00');
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await expect(page.getByText('Cash → Savings', { exact: true })).toHaveCount(1);
+  await page.getByText('Cash → Savings', { exact: true }).click();
+  await page.getByRole('button', { name: 'Delete transfer', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+  await expect(page.getByText('Cash → Savings', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,000.00');
+});
+
+test('edit, duplicate and delete an expense; history filters and search narrow results', async ({ page }) => {
+  await setup(page);
+  await addExpense(page, '50');
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await page.getByRole('button', { name: /^Food & drink,.*Open details$/ }).click();
+  await expect(page.getByRole('heading', { name: 'Edit expense', exact: true })).toBeVisible();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('80');
+  await page.getByRole('button', { name: 'Add a note', exact: true }).click();
+  await page.getByLabel('Note (optional)', { exact: true }).fill('Team lunch');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText('Changes saved.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Team lunch', { exact: true })).toBeVisible();
+  await page.getByText('Team lunch', { exact: true }).click();
+  await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Add an expense', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Amount (PHP)', { exact: true })).toHaveValue('80.00');
+  await page.getByRole('button', { name: 'Save expense', exact: true }).click();
+  await expect(page.getByText('Team lunch', { exact: true })).toHaveCount(2);
+  await page.getByLabel('Search', { exact: true }).fill('lunch');
+  await expect(page.getByText('Opening balance', { exact: true })).toHaveCount(0);
+  await page.getByLabel('Search', { exact: true }).fill('');
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  await page.getByRole('button', { name: 'Income', exact: true }).click();
+  await expect(page.getByText('No matches', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await page.getByText('Team lunch', { exact: true }).first().click();
+  await page.getByRole('button', { name: 'Delete expense', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
+  await expect(page.getByText('Transaction deleted.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Team lunch', { exact: true })).toHaveCount(1);
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('920.00');
+});
+
+test('budget progress, insights, custom category, hidden balances and theme persist', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Manage categories', exact: true }).click();
+  await page.getByRole('button', { name: 'Add category', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Coffee');
+  await page.getByRole('radio', { name: 'Icon coffee', exact: true }).click();
+  await page.getByRole('radio', { name: 'Color amber', exact: true }).click();
+  await page.getByRole('button', { name: 'Save category', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Edit Coffee', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await addExpense(page, '120', 'Coffee');
+  await page.getByRole('link', { name: 'Plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Create your first budget', exact: true }).click();
+  await page.getByRole('button', { name: 'Coffee', exact: true }).click();
+  await page.getByLabel('Limit (PHP)', { exact: true }).fill('100');
+  await page.getByRole('button', { name: 'Save budget', exact: true }).click();
+  await expect(page.getByTestId('budget-list')).toContainText('over');
+  await page.screenshot({ path: testInfo.outputPath('plan-budget.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Open insights', exact: true }).click();
+  await expect(page.getByText('Spending by category', { exact: true })).toBeVisible();
+  await expect(page.getByText('Coffee', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Plan', exact: true }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Dark', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Dark', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('switch', { name: 'Hide balances' }).click();
+  await expect(page.getByRole('switch', { name: 'Hide balances' })).toBeChecked();
+  await page.reload();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Plan', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('₱ ••••');
+  await expect(page.getByTestId('bottom-navigation')).toHaveCSS('background-color', 'rgb(34, 40, 51)');
+  await page.screenshot({ path: testInfo.outputPath('hidden-dark.png'), fullPage: true });
+});
+
+test('backup export then restore replaces data and can be undone', async ({ page }) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup', exact: true }).click();
+  const download = await downloadPromise;
+  const backup = readFileSync(await download.path(), 'utf8');
+  expect(JSON.parse(backup).format).toBe('owllowance-backup');
+  await expect(page.getByText(/^Last backup:/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await addExpense(page, '400');
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Restore from backup', exact: true }).click();
+  await (await chooser).setFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(backup) });
+  await expect(page.getByTestId('restore-preview')).toContainText('2 wallets');
+  await page.getByRole('button', { name: 'Replace and restore', exact: true }).click();
+  await expect(page.getByText('Backup restored. You can undo this below.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,000.00');
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Undo last restore', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm undo', exact: true }).click();
+  await expect(page.getByText('Your data from before the restore is back.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('600.00');
+  const bad = page.waitForEvent('filechooser');
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Restore from backup', exact: true }).click();
+  await (await bad).setFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"other"}') });
+  await expect(page.getByText(/not an Owllowance backup/)).toBeVisible();
+});

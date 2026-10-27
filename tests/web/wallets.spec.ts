@@ -43,7 +43,7 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await expect(page.getByLabel('Wallet name', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit name', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('Everyday');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Save name', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm rename', exact: true }).click();
   await page.getByRole('button', { name: 'Back to Wallet', exact: true }).click();
   await page.getByRole('button', { name: 'Wallet options: Everyday', exact: true }).click();
@@ -122,7 +122,7 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await expect(page.getByLabel('Wallet name', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit name', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('GCash');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Save name', exact: true }).click();
   await expect(page.getByText('A wallet with this name already exists. Choose a different name.', { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('duplicate-wallet-validation.png'), fullPage: true });
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();

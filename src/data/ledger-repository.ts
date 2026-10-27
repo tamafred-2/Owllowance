@@ -108,6 +108,7 @@ function historyWhere(filter: HistoryFilter): { clause: string; params: SqlValue
     if (!['expense', 'income', 'transfer'].includes(filter.type)) throw new ValidationError('Invalid history filter.');
     conditions.push('t.type = ?'); params.push(filter.type);
   }
+  if (filter.linkedId) { assertId(filter.linkedId); conditions.push('t.linked_id = ?'); params.push(filter.linkedId); }
   if (filter.categoryId) { assertId(filter.categoryId); conditions.push('t.category_id = ?'); params.push(filter.categoryId); }
   if (filter.fromDate) { assertLocalDate(filter.fromDate); conditions.push('t.local_date >= ?'); params.push(filter.fromDate); }
   if (filter.toDateExclusive) { assertLocalDate(filter.toDateExclusive); conditions.push('t.local_date < ?'); params.push(filter.toDateExclusive); }

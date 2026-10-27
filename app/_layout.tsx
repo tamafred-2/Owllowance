@@ -4,7 +4,7 @@ import { Image, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppShell } from '../src/components/app-shell';
 import { ThemeProvider } from '../src/design-system/theme';
-import { TrackerProvider } from '../src/features/tracker/presentation/tracker-context';
+import { TrackerProvider, useTracker } from '../src/features/tracker/presentation/tracker-context';
 import { forestSceneAt, forestScenes } from '../src/design-system/artwork';
 
 // iOS/older binaries retain the native splash until React can replace it.
@@ -16,6 +16,14 @@ if (Platform.OS !== 'web') {
   if (forest?.uri) void Image.prefetch(forest.uri).catch(() => {});
 }
 
+// Stored preferences apply once local data opens; the system theme is used until then.
+function ThemedApp() {
+  const settings = useTracker().overview?.settings;
+  const preferences = settings ? { theme: settings.theme, hideBalances: settings.hideBalances, reduceMotion: settings.reduceMotion } : undefined;
+  const dark = settings?.theme === 'dark' ? 'light' : settings?.theme === 'light' ? 'dark' : 'auto';
+  return <ThemeProvider preferences={preferences}><StatusBar style={dark} /><AppShell /></ThemeProvider>;
+}
+
 export default function RootLayout() {
-  return <SafeAreaProvider><ThemeProvider><TrackerProvider><StatusBar style="auto" /><AppShell /></TrackerProvider></ThemeProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><TrackerProvider><ThemedApp /></TrackerProvider></SafeAreaProvider>;
 }

@@ -1,18 +1,19 @@
 import { HeaderActions } from '../../../components/header-actions';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { AppText, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppText, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon, type IconName } from '../../../design-system/icon';
 import { forestSummaryColors, useTheme } from '../../../design-system/theme';
 import { FloatingStreak } from '../../../components/floating-streak';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
+import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
-const quickActions: { label: string; icon: IconName }[] = [
-  { label: 'Transfer', icon: 'transfer' }, { label: 'Budgets', icon: 'budgets' },
-  { label: 'Goals', icon: 'goals' }, { label: 'Debt', icon: 'debt' }, { label: 'Planned', icon: 'plan' },
+const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports' }[] = [
+  { label: 'Transfer', icon: 'transfer', href: '/transfer' }, { label: 'Budgets', icon: 'budgets', href: '/plan' },
+  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals' }, { label: 'Debt', icon: 'debt' },
 ];
 
 export function HomeScreen() {
@@ -44,12 +45,14 @@ export function HomeScreen() {
           <AppText size={12} style={{ color: palette.secondary }}>Make room for what matters.</AppText>
         </Surface>;
       }}</ForestScene>
-      {saved ? <Feedback>{saved === 'income' ? 'Income saved.' : 'Expense saved.'}</Feedback> : null}
+      <SavedFeedback saved={saved} />
       <View style={{ gap: 14 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><AppText size={18} weight="600">Quick actions</AppText><AppText size={12} tone="secondary">Coming soon</AppText></View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><AppText size={18} weight="600">Quick actions</AppText></View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {quickActions.map(action => <Pressable key={action.label} disabled accessibilityRole="button" accessibilityLabel={`${action.label}, coming soon`} accessibilityState={{ disabled: true }}
-            style={{ flex: 1, minWidth: fontScale > 1.2 ? 90 : 54, alignItems: 'center', gap: 8, paddingVertical: 8 }}>
+          {quickActions.map(action => <Pressable key={action.label} disabled={!action.href} accessibilityRole={action.href ? 'link' : 'button'}
+            accessibilityLabel={action.href ? action.label : `${action.label}, coming soon`} accessibilityState={{ disabled: !action.href }}
+            onPress={() => { if (action.href) router.push(action.href); }}
+            style={({ pressed }) => ({ flex: 1, minWidth: fontScale > 1.2 ? 90 : 54, alignItems: 'center', gap: 8, paddingVertical: 8, opacity: !action.href ? 0.55 : pressed ? 0.7 : 1 })}>
             <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}><AppIcon name={action.icon} color={colors.accent} /></View>
             <AppText size={11} tone="secondary">{action.label}</AppText>
           </Pressable>)}

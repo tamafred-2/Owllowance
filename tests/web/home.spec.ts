@@ -35,8 +35,11 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await expect(navigation.getByText('Add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Total balance', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Recent activity', { exact: true })).toHaveCount(0);
-  for (const label of ['Notifications', 'Settings', 'Transfer', 'Budgets', 'Goals', 'Debt', 'Planned']) {
+  for (const label of ['Notifications', 'Goals', 'Debt']) {
     await expect(page.getByRole('button', { name: `${label}, coming soon`, exact: true })).toBeDisabled();
+  }
+  for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights']) {
+    await expect(page.getByRole('link', { name: label, exact: true }).first()).toBeEnabled();
   }
   await expect(page.getByTestId('today-net')).toContainText('₱0.00');
   await page.screenshot({ path: testInfo.outputPath('home-top-light.png'), fullPage: true });
@@ -67,6 +70,6 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
     await expect(page.getByRole('heading', { name: route, exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`${route.toLowerCase()}-header.png`), fullPage: true });
     await expect(page.getByRole('button', { name: 'Notifications, coming soon', exact: true })).toBeDisabled();
-    await expect(page.getByRole('button', { name: 'Settings, coming soon', exact: true })).toBeDisabled();
+    await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeEnabled();
   }
 });

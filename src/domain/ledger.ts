@@ -17,7 +17,7 @@ export type ActivityItem = EventTime & {
 };
 export type HistoryFilter = {
   walletId?: string; type?: 'expense' | 'income' | 'transfer'; categoryId?: string;
-  fromDate?: string; toDateExclusive?: string; search?: string;
+  fromDate?: string; toDateExclusive?: string; search?: string; linkedId?: string;
 };
 export type BudgetPeriod = 'monthly' | 'weekly' | 'custom';
 export type Budget = {

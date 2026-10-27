@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import type { EntryCommand, OpeningCommand, WalletKind } from '../../../domain/ledger';
+import type { ActivityItem, EntryCommand, OpeningCommand, TransferCommand, WalletKind } from '../../../domain/ledger';
+import { eventTime } from '../../../domain/date';
 import { ValidationError } from '../../../domain/money';
 import { useTracker } from './tracker-context';
 
@@ -35,35 +36,73 @@ export function useWalletSetup(onSaved?: () => void) {
   return { name, setName, kind, setKind, amount, setAmount, busy, error, submit };
 }
 
-export function useTransactionForm(onSaved: (walletId: string) => void, type: 'expense' | 'income' = 'expense', initialWalletId = '') {
+export type EntryDraft = { walletId?: string; categoryId?: string; amount?: string; note?: string; localDate?: string };
+
+// New entries (optionally prefilled for duplicates) or, with `editing`, a revision-checked edit.
+export function useTransactionForm(onSaved: (walletId: string) => void, type: 'expense' | 'income' = 'expense', initial: EntryDraft = {}, editing?: ActivityItem) {
   const { service, overview, refresh } = useTracker();
-  const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [selectedWalletId, setWalletId] = useState(initialWalletId);
+  const [amount, setAmount] = useState(initial.amount ?? '');
+  const [categoryId, setCategoryId] = useState(initial.categoryId ?? '');
+  const [selectedWalletId, setWalletId] = useState(initial.walletId ?? '');
   const walletId = selectedWalletId || overview?.wallet?.id || '';
-  const wallet = overview?.wallets.find(item => item.id === walletId);
-  const [note, setNote] = useState('');
+  const wallet = [...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])].find(item => item.id === walletId);
+  const [note, setNote] = useState(initial.note ?? '');
+  const [localDate, setLocalDate] = useState(initial.localDate ?? eventTime().localDate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
   const pending = useRef<{ fingerprint: string; command: EntryCommand } | null>(null);
 
   async function submit() {
-    if (!service || !overview?.wallet || inFlight.current) return;
+    if (!service || inFlight.current || (!editing && !overview?.wallet)) return;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      const values = { walletId, categoryId, amount, note, type };
-      const fingerprint = JSON.stringify(values);
-      if (pending.current?.fingerprint !== fingerprint) {
-        pending.current = { fingerprint, command: service.prepareEntry(values) };
+      const values = { walletId, categoryId, amount, note, type, localDate };
+      if (editing) {
+        await service.repository.updateEntry(service.prepareEdit(editing, values));
+      } else {
+        const fingerprint = JSON.stringify(values);
+        if (pending.current?.fingerprint !== fingerprint) {
+          pending.current = { fingerprint, command: service.prepareEntry(values) };
+        }
+        if (type === 'income') await service.repository.addIncome(pending.current.command);
+        else await service.repository.addExpense(pending.current.command);
       }
-      if (type === 'income') await service.repository.addIncome(pending.current.command);
-      else await service.repository.addExpense(pending.current.command);
       // A committed write remains successful even if refreshing the query fails.
       await refresh();
       onSaved(walletId);
     } catch (failure) { setError(saveError(failure)); }
     finally { inFlight.current = false; setBusy(false); }
   }
-  return { walletId, setWalletId, wallet, amount, setAmount, categoryId, setCategoryId, note, setNote, busy, error, submit };
+  return { walletId, setWalletId, wallet, amount, setAmount, categoryId, setCategoryId, note, setNote, localDate, setLocalDate, busy, error, submit };
+}
+
+export function useTransferForm(onSaved: (walletId: string) => void, initial: { fromWalletId?: string; toWalletId?: string }) {
+  const { service, overview, refresh } = useTracker();
+  const wallets = overview?.wallets ?? [];
+  const [fromWalletId, setFromWalletId] = useState(initial.fromWalletId ?? wallets[0]?.id ?? '');
+  const [toWalletId, setToWalletId] = useState(initial.toWalletId ?? wallets.find(item => item.id !== (initial.fromWalletId ?? wallets[0]?.id))?.id ?? '');
+  const [amount, setAmount] = useState('');
+  const [fee, setFee] = useState('');
+  const [note, setNote] = useState('');
+  const [localDate, setLocalDate] = useState(eventTime().localDate);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const pending = useRef<{ fingerprint: string; command: TransferCommand } | null>(null);
+
+  async function submit() {
+    if (!service || inFlight.current) return;
+    inFlight.current = true; setBusy(true); setError(null);
+    try {
+      const values = { fromWalletId, toWalletId, amount, fee, note, localDate };
+      const fingerprint = JSON.stringify(values);
+      if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, command: service.prepareTransfer(values) };
+      await service.repository.addTransfer(pending.current.command);
+      await refresh();
+      onSaved(fromWalletId);
+    } catch (failure) { setError(saveError(failure)); }
+    finally { inFlight.current = false; setBusy(false); }
+  }
+  return { fromWalletId, setFromWalletId, toWalletId, setToWalletId, amount, setAmount, fee, setFee, note, setNote, localDate, setLocalDate, busy, error, submit };
 }

@@ -21,14 +21,22 @@
       "expo-router",
       "expo-sqlite",
       "expo-status-bar",
-      ["expo-splash-screen", {
-        "backgroundColor": "#F4F5F8",
-        "dark": { "backgroundColor": "#F4F5F8" },
-        "android": {
-          "drawable": { "icon": "./assets/motion/native-launch-placeholder.xml" }
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F4F5F8",
+          "dark": {
+            "backgroundColor": "#F4F5F8"
+          },
+          "android": {
+            "drawable": {
+              "icon": "./assets/motion/native-launch-placeholder.xml"
+            }
+          }
         }
-      }],
-      "./plugins/with-native-loading.cjs"
+      ],
+      "./plugins/with-native-loading.cjs",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

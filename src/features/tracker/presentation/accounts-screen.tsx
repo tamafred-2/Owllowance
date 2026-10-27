@@ -11,6 +11,7 @@ import { type Wallet, type WalletKind } from '../../../domain/ledger';
 import { WalletCard } from '../../../components/wallet-card';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
+import { SavedFeedback } from './saved-feedback';
 import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
 import { RenameWalletModal } from './rename-wallet-modal';
@@ -53,7 +54,7 @@ export function AccountsScreen() {
           </View>
           <AppText size={14} tone="secondary">Your wallets, in one view.</AppText>
         </View>
-        {saved ? <Feedback>{saved === 'income' ? 'Income saved.' : 'Expense saved.'}</Feedback> : null}
+        <SavedFeedback saved={saved} />
         <ForestScene visible={sceneVisible}>
           {({ night }) => {
             const palette = forestSummaryColors[night ? 'night' : 'day'];
@@ -93,6 +94,7 @@ export function AccountsScreen() {
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>
         {!menuWallet.archivedAt ? <Button label="Add money" icon="income" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/expense', params: { mode: 'income', walletId: id, from: 'wallet' } }); }} /> : null}
+        {!menuWallet.archivedAt && overview.wallets.length > 1 ? <Button label="Transfer" icon="transfer" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/transfer', params: { walletId: id, from: 'wallet' } }); }} /> : null}
         <Button label="Edit name" icon="edit" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
         <Button label="View history" icon="activity" variant="quiet" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
         <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />

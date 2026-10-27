@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextProps, type TextInputProps, type ViewStyle, type StyleProp } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View, type TextProps, type TextInputProps, type ViewStyle, type StyleProp } from 'react-native';
 import { formatMoney } from '../domain/money';
 import { AppIcon, type IconName } from './icon';
 import { radius, useTheme } from './theme';
@@ -13,8 +13,29 @@ export function AppText({ tone = 'primary', size = 16, weight = '400', style, ..
   return <Text {...props} style={[{ color, fontSize: size, lineHeight: size * 1.5, fontWeight: weight }, style]} />;
 }
 
+// Privacy mode masks the visible text and its accessibility label.
 export function MoneyText({ value, size = 24, style, fit = false }: { value: number; size?: number; style?: TextProps['style']; fit?: boolean }) {
-  return <AppText size={size} weight="600" numberOfLines={fit ? 1 : undefined} adjustsFontSizeToFit={fit} minimumFontScale={0.6} style={[{ fontVariant: ['tabular-nums'] }, style]}>{formatMoney(value)}</AppText>;
+  const { hideBalances } = useTheme();
+  return <AppText size={size} weight="600" numberOfLines={fit ? 1 : undefined} adjustsFontSizeToFit={fit} minimumFontScale={0.6}
+    accessibilityLabel={hideBalances ? 'Amount hidden' : undefined} style={[{ fontVariant: ['tabular-nums'] }, style]}>{hideBalances ? '₱ ••••' : formatMoney(value)}</AppText>;
+}
+
+export function Chip({ label, selected, onPress, icon, disabled = false }: { label: string; selected: boolean; onPress: () => void; icon?: IconName; disabled?: boolean }) {
+  const { colors } = useTheme();
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected, disabled }} aria-pressed={selected} disabled={disabled} onPress={onPress}
+    style={({ pressed }) => ({ minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
+      borderColor: selected ? colors.accent : colors.border, backgroundColor: selected ? colors.accent : colors.surface, opacity: disabled ? 0.55 : pressed ? 0.8 : 1 })}>
+    {icon ? <AppIcon name={icon} size={16} color={selected ? colors.onAccent : colors.textSecondary} /> : null}
+    <AppText size={13} weight="600" style={{ color: selected ? colors.onAccent : colors.textPrimary }}>{label}</AppText>
+  </Pressable>;
+}
+
+export function ToggleRow({ label, description, value, onChange, disabled = false }: { label: string; description?: string; value: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
+  const { colors } = useTheme();
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}>
+    <View style={{ flex: 1, gap: 2 }}><AppText size={15} weight="500">{label}</AppText>{description ? <AppText size={12} tone="secondary">{description}</AppText> : null}</View>
+    <Switch accessibilityLabel={label} value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: colors.accent, false: colors.border }} thumbColor={colors.surface} />
+  </View>;
 }
 
 export function Surface({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {

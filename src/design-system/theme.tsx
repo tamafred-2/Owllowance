@@ -18,9 +18,28 @@ export const forestSummaryColors = {
   day: { background: 'rgba(255, 248, 235, 0.9)', border: 'rgba(255, 253, 247, 0.75)', text: '#24364B', secondary: '#42566A' },
   night: { background: 'rgba(20, 37, 58, 0.9)', border: 'rgba(176, 198, 222, 0.35)', text: '#F4F1E9', secondary: '#C3D3E4' },
 };
-const Context = createContext({ colors: light, isDark: false });
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const isDark = useColorScheme() === 'dark';
-  return <Context.Provider value={{ colors: isDark ? dark : light, isDark }}>{children}</Context.Provider>;
+// Muted category tints; each pair keeps icon contrast on its own background.
+const categoryPalette = {
+  accent: { light: ['#E3EBF4', '#24476B'], dark: ['#2A3A4D', '#A4C6E8'] },
+  success: { light: ['#E1F0E8', '#236449'], dark: ['#21392F', '#8CD5B4'] },
+  slate: { light: ['#E8EBEF', '#4A5566'], dark: ['#323A46', '#C3CBD6'] },
+  teal: { light: ['#DDF0EF', '#1D6362'], dark: ['#1F3A3B', '#86D0CD'] },
+  amber: { light: ['#F7ECD6', '#7A5310'], dark: ['#41361F', '#E8C27A'] },
+  rose: { light: ['#F6E3E6', '#8A3443'], dark: ['#432A30', '#EBA7B3'] },
+  violet: { light: ['#ECE6F6', '#55408A'], dark: ['#352E47', '#C2B2EA'] },
+  orange: { light: ['#F8E6DA', '#8A4518'], dark: ['#45301F', '#F0B48B'] },
+} as const;
+export type CategoryColorToken = keyof typeof categoryPalette;
+export function categoryColors(token: string | null, isDark: boolean): { background: string; foreground: string } {
+  const pair = (categoryPalette[token as CategoryColorToken] ?? categoryPalette.accent)[isDark ? 'dark' : 'light'];
+  return { background: pair[0], foreground: pair[1] };
+}
+
+export type ThemePreferences = { theme: 'system' | 'light' | 'dark'; hideBalances: boolean; reduceMotion: boolean };
+const Context = createContext({ colors: light, isDark: false, hideBalances: false, reduceMotion: false });
+export function ThemeProvider({ children, preferences }: { children: ReactNode; preferences?: ThemePreferences }) {
+  const system = useColorScheme();
+  const isDark = (preferences?.theme && preferences.theme !== 'system' ? preferences.theme : system) === 'dark';
+  return <Context.Provider value={{ colors: isDark ? dark : light, isDark, hideBalances: preferences?.hideBalances ?? false, reduceMotion: preferences?.reduceMotion ?? false }}>{children}</Context.Provider>;
 }
 export const useTheme = () => useContext(Context);

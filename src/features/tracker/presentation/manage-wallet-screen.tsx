@@ -3,14 +3,15 @@ import { RenameWalletModal } from './rename-wallet-modal';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { AppText, Button, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppText, Button, MoneyText, Surface } from '../../../design-system/primitives';
 import type { Wallet } from '../../../domain/ledger';
 import { walletKindLabels } from '../../../domain/ledger';
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTracker } from './tracker-context';
+import { SavedFeedback } from './saved-feedback';
 
 function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
-  const { error: storageError } = useTracker();
+  const { overview, error: storageError } = useTracker();
   const [renaming, setRenaming] = useState(false);
   const disabled = Boolean(storageError);
   return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
@@ -20,7 +21,7 @@ function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
         <Button label="Edit name" icon="edit" iconOnly variant="quiet" disabled={disabled || renaming} onPress={() => setRenaming(true)} />
       </View>
       <AppText accessibilityRole="header" size={28} weight="600">Manage wallet</AppText>
-      {saved ? <Feedback>{saved === 'income' ? 'Income saved.' : 'Expense saved.'}</Feedback> : null}
+      <SavedFeedback saved={saved} />
       <Surface style={{ gap: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <WalletBadge name={wallet.name} kind={wallet.kind} />
@@ -28,6 +29,7 @@ function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
         </View>
         <View style={{ gap: 4 }}><AppText size={14} tone="secondary">{wallet.archivedAt ? 'Archived balance' : 'Current balance'}</AppText><MoneyText value={wallet.balanceMinor} size={32} fit /></View>
         {!wallet.archivedAt ? <Button label="Add money" disabled={disabled} onPress={() => router.push({ pathname: '/expense', params: { mode: 'income', walletId: wallet.id, from: 'manage' } })} /> : null}
+        {!wallet.archivedAt && (overview?.wallets.length ?? 0) > 1 ? <Button label="Transfer" icon="transfer" variant="secondary" disabled={disabled} onPress={() => router.push({ pathname: '/transfer', params: { walletId: wallet.id, from: 'manage' } })} /> : null}
       </Surface>
       <WalletHistory walletId={wallet.id} />
       {renaming ? <RenameWalletModal wallet={wallet} onClose={() => setRenaming(false)} /> : null}

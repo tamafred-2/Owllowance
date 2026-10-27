@@ -5,12 +5,14 @@ import { AppText, Button, Feedback, Surface } from '../../../design-system/primi
 import { useTheme } from '../../../design-system/theme';
 import { TransactionRow } from '../../../components/transaction-row';
 import { useTracker } from './tracker-context';
+import { useTransactionOpener } from './transaction-opener';
 
 const PAGE_SIZE = 10;
 
 export function WalletHistory({ walletId }: { walletId: string }) {
   const { service, overview } = useTracker();
   const { colors } = useTheme();
+  const opener = useTransactionOpener('manage', walletId);
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -45,11 +47,12 @@ export function WalletHistory({ walletId }: { walletId: string }) {
     <AppText accessibilityRole="header" size={20} weight="600">Wallet history</AppText>
     <AppText size={14} tone="secondary">Cash in and out of this wallet.</AppText>
     <View testID="wallet-history">
-      {items.map(item => <TransactionRow key={item.id} item={item} walletHistory />)}
+      {items.map(item => <TransactionRow key={item.id} item={item} walletHistory onPress={opener.open} />)}
     </View>
     {!items.length && !loading && !error ? <AppText tone="secondary">No transactions yet.</AppText> : null}
     {loading ? <ActivityIndicator accessibilityLabel="Loading wallet history" color={colors.accent} /> : null}
     {error ? <><Feedback error>Could not load wallet history.</Feedback><Button label="Retry wallet history" variant="secondary" onPress={() => { void load(items.length === 0); }} /></> : null}
     {hasMore && !error ? <Button label="Load more" variant="secondary" disabled={loading} onPress={() => { void load(); }} /> : null}
+    {opener.modal}
   </Surface>;
 }
