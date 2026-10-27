@@ -1,4 +1,6 @@
 import { Link } from 'expo-router';
+import { useRef } from 'react';
+import type { MenuAnchor } from './anchored-menu';
 import { Image, Pressable, View, type ImageSourcePropType } from 'react-native';
 import type { Wallet } from '../domain/ledger';
 import { walletKindLabels } from '../domain/ledger';
@@ -30,11 +32,13 @@ export function WalletBadge({ name, kind }: Pick<Wallet, 'name' | 'kind'>) {
   </View>;
 }
 
-export function WalletCard({ wallet, compact, label = wallet.name }: { wallet: Wallet; compact: boolean; label?: string }) {
+export function WalletCard({ wallet, compact, label = wallet.name, onMenu }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void }) {
+  const menuButton = useRef<View>(null);
   const palette = walletAppearance(wallet.name, wallet.kind);
-  return <Link href={{ pathname: '/wallet-manage', params: { id: wallet.id } }} asChild>
-    <Pressable accessibilityRole="link" accessibilityLabel={`Manage ${label}`} style={{ padding: 14, borderRadius: 18, backgroundColor: palette.color, width: compact ? '48%' : '100%', minHeight: 144, gap: 22 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  return <View style={{ width: compact ? '48%' : '100%', borderRadius: 18, backgroundColor: palette.color }}>
+    <Link href={{ pathname: '/wallet-manage', params: { id: wallet.id } }} asChild>
+    <Pressable accessibilityRole="link" accessibilityLabel={`Manage ${label}`} style={{ padding: 14, borderRadius: 18, backgroundColor: palette.color, width: '100%', minHeight: 144, gap: 22 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 30 }}>
         <WalletBadge name={wallet.name} kind={wallet.kind} />
         <View style={{ flex: 1 }}><AppText size={13} weight="600" style={{ color: palette.ink }}>{label}</AppText><AppText size={10} style={{ color: palette.ink }}>{walletKindLabels[wallet.kind]} / PHP{wallet.archivedAt ? ' / Archived' : ''}</AppText></View>
       </View>
@@ -43,5 +47,10 @@ export function WalletCard({ wallet, compact, label = wallet.name }: { wallet: W
         <MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} style={{ color: palette.ink }} />
       </View>
     </Pressable>
-  </Link>;
+  </Link>
+    <Pressable ref={menuButton} accessibilityRole="button" accessibilityLabel={`Wallet options: ${label}`} onPress={() => menuButton.current?.measureInWindow((x, y, width, height) => onMenu({ x, y, width, height }))}
+      style={({ pressed }) => ({ position: 'absolute', right: 2, top: 6, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.65 : 1 })}>
+      <AppIcon name="more" color={palette.ink} />
+    </Pressable>
+  </View>;
 }

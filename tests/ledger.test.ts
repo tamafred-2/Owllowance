@@ -78,13 +78,13 @@ test('multiple wallet types preserve existing records and debit only the selecte
 
 test('additional wallet failure rolls back without harming existing records; aggregate overflow is rejected', async t => {
   const f = await fixture(); t.after(() => f.connection.sqlite.close());
-  const second = { ...opening(200), walletKind: 'bank' as const };
+  const second = { ...opening(200), walletName: 'Second', walletKind: 'bank' as const };
   f.connection.failNextEntry = true;
   await assert.rejects(f.repository.createWallet(second), /Injected/);
   assert.equal((await f.repository.overview()).wallets.length, 1);
   assert.equal((await f.repository.overview()).totalBalanceMinor, 100_000);
   await f.repository.createWallet(second);
-  await assert.rejects(f.repository.createWallet(opening(MAX_MINOR)), /supported range/);
+  await assert.rejects(f.repository.createWallet({ ...opening(MAX_MINOR), walletName: 'Overflow' }), /supported range/);
   assert.equal((await f.repository.overview()).totalBalanceMinor, 100_200);
   assert.equal((await f.repository.overview()).wallets.length, 2);
 });
@@ -137,7 +137,7 @@ test('wallet setup failure is fully atomic and safe to retry', async t => {
   await repository.createWallet(setup);
   await assert.rejects(repository.createWallet({ ...setup, walletName: 'Different wallet' }), /different transaction/);
   assert.equal((await repository.overview()).wallet?.balanceMinor, 0);
-  await repository.createWallet(opening());
+  await repository.createWallet({ ...opening(), walletName: 'Second' });
   assert.equal((await repository.overview()).wallets.length, 2);
 });
 
@@ -171,7 +171,7 @@ test('migration failure rolls back DDL; retry and reinitialization preserve exis
   await assert.rejects(repository.initialize(), /migration failure/);
   assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 0);
   assert.equal(connection.sqlite.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table'").get()?.count, 0);
-  await repository.initialize(); await repository.createWallet(opening()); await repository.initialize();
+  await repository.initialize(); await repository.createWallet({ ...opening(), walletName: 'Second' }); await repository.initialize();
   assert.equal((await repository.overview()).wallet?.balanceMinor, 100_000);
   assert.equal(connection.sqlite.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 3);
 });
@@ -212,4 +212,47 @@ test('history pages contain each record once in a deterministic order', async t 
   assert.equal(new Set([...first, ...second, ...third].map(item => item.id)).size, 52);
   assert.equal(third.length, 2);
   await assert.rejects(f.repository.history(-1, 25));
+});
+
+
+test('wallet names are unique across active and archived accounts while provider names may repeat', async t => {
+  const f = await fixture(); t.after(() => f.connection.sqlite.close());
+  const bank = { ...opening(200), walletName: 'GCash Savings' };
+  await f.repository.createWallet(bank);
+  await f.repository.createWallet({ ...opening(300), walletName: 'GCash Spending' });
+  await assert.rejects(f.repository.renameWallet(f.setup.walletId, '  gcash   savings  '), /already exists/);
+  await f.repository.setWalletArchived(bank.walletId, true);
+  await assert.rejects(f.repository.createWallet({ ...opening(400), walletName: 'GCASH SAVINGS' }), /already exists/);
+  await f.repository.renameWallet(bank.walletId, 'GCash Savings');
+  await f.repository.createWallet(bank);
+  const view = await f.repository.overview();
+  assert.equal(view.totalBalanceMinor, 100500);
+  assert.equal(view.wallets.length + view.archivedWallets.length, 3);
+});
+
+
+test('wallet history filters before pagination and retains archived wallet movements', async t => {
+  const f = await fixture(); t.after(() => f.connection.sqlite.close());
+  const bank = { ...opening(500), walletName: 'History bank' };
+  await f.repository.createWallet(bank);
+  const categoryId = (await f.repository.overview()).incomeCategories[0].id;
+  const income = { ...f.expense(200), categoryId };
+  await f.repository.addIncome(income);
+  for (let index = 0; index < 13; index++) {
+    await f.repository.addExpense(f.expense(10));
+    await f.repository.addExpense({ ...f.expense(20), walletId: bank.walletId });
+  }
+  const before = await f.repository.overview();
+  await f.repository.setWalletArchived(f.setup.walletId, true);
+  const all = await f.repository.history(0, 100, f.setup.walletId);
+  const paged = [...await f.repository.history(0, 10, f.setup.walletId), ...await f.repository.history(10, 10, f.setup.walletId)];
+  assert.deepEqual(paged, all);
+  assert.equal(all.length, 15);
+  assert.equal(new Set(all.map(item => item.id)).size, 15);
+  assert.ok(all.every(item => item.walletName === 'Cash'));
+  assert.equal(all.find(item => item.id === income.id)?.amountMinor, 200);
+  assert.equal(all.filter(item => item.type === 'expense').length, 13);
+  assert.equal(all.filter(item => item.type === 'opening').length, 1);
+  assert.deepEqual(await f.repository.history(0, 10, randomUUID()), []);
+  assert.equal((await f.repository.overview()).totalBalanceMinor, before.totalBalanceMinor);
 });

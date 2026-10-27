@@ -35,11 +35,11 @@ export function useWalletSetup(onSaved?: () => void) {
   return { name, setName, kind, setKind, amount, setAmount, busy, error, submit };
 }
 
-export function useTransactionForm(onSaved: () => void, type: 'expense' | 'income' = 'expense') {
+export function useTransactionForm(onSaved: (walletId: string) => void, type: 'expense' | 'income' = 'expense', initialWalletId = '') {
   const { service, overview, refresh } = useTracker();
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [selectedWalletId, setWalletId] = useState('');
+  const [selectedWalletId, setWalletId] = useState(initialWalletId);
   const walletId = selectedWalletId || overview?.wallet?.id || '';
   const wallet = overview?.wallets.find(item => item.id === walletId);
   const [note, setNote] = useState('');
@@ -61,7 +61,7 @@ export function useTransactionForm(onSaved: () => void, type: 'expense' | 'incom
       else await service.repository.addExpense(pending.current.command);
       // A committed write remains successful even if refreshing the query fails.
       await refresh();
-      onSaved();
+      onSaved(walletId);
     } catch (failure) { setError(saveError(failure)); }
     finally { inFlight.current = false; setBusy(false); }
   }

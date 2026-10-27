@@ -1,3 +1,4 @@
+import { validateWalletName } from '../domain/wallet-name';
 import type { ActivityItem, EntryCommand, LedgerRepository, OpeningCommand, Overview, Wallet } from '../domain/ledger';
 import { assertEventTime, eventTime } from '../domain/date';
 import { addMinor, assertMinor, ValidationError } from '../domain/money';
@@ -15,12 +16,13 @@ type Existing = {
   note: string; occurred_at: string; local_date: string; time_zone: string; offset_minutes: number;
   wallet_name: string; wallet_kind: string;
 };
-const activityQuery = `SELECT t.id, t.type, t.occurred_at AS occurredAt,
+const activitySelect = `SELECT t.id, t.type, t.occurred_at AS occurredAt,
   t.local_date AS localDate, t.time_zone AS timeZone, t.offset_minutes AS offsetMinutes,
   t.note, e.amount_minor AS amountMinor, a.name AS walletName, c.name AS categoryName
   FROM transactions t JOIN entries e ON e.transaction_id = t.id
-  JOIN accounts a ON a.id = e.account_id LEFT JOIN categories c ON c.id = t.category_id
-  ORDER BY t.local_date DESC, t.occurred_at DESC, t.id DESC LIMIT ? OFFSET ?`;
+  JOIN accounts a ON a.id = e.account_id LEFT JOIN categories c ON c.id = t.category_id`;
+const activityOrder = ' ORDER BY t.local_date DESC, t.occurred_at DESC, t.id DESC LIMIT ? OFFSET ?';
+const activityQuery = activitySelect + activityOrder;
 
 function assertId(id: string): void {
   if (!/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(id)) {
@@ -91,9 +93,13 @@ export class SqlLedgerRepository implements LedgerRepository {
     });
   }
 
-  history(offset: number, limit: number): Promise<ActivityItem[]> {
+  history(offset: number, limit: number, walletId?: string): Promise<ActivityItem[]> {
     if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
       return Promise.reject(new ValidationError('Invalid history page.'));
+    }
+    if (walletId !== undefined) {
+      assertId(walletId);
+      return this.database.exclusive(sql => sql.getAllAsync(activitySelect + ' WHERE a.id = ?' + activityOrder, walletId, limit, offset));
     }
     return this.database.exclusive(sql => sql.getAllAsync(activityQuery, limit, offset));
   }
@@ -107,6 +113,7 @@ export class SqlLedgerRepository implements LedgerRepository {
     if (!name || name.length > 60) throw new ValidationError('Use a wallet name between 1 and 60 characters.');
     return this.database.transaction(async sql => {
       if (await alreadyPosted(sql, command, 'opening')) return;
+      validateWalletName(name, await sql.getAllAsync<{ id: string; name: string }>('SELECT id, name FROM accounts WHERE profile_id = ?', PROFILE));
       const balance = await sql.getFirstAsync<{ amount: number }>('SELECT COALESCE(SUM(amount_minor), 0) AS amount FROM entries');
       addMinor(balance?.amount ?? 0, command.amountMinor);
       const profile = await sql.getFirstAsync('SELECT id FROM profiles WHERE id = ?', PROFILE);
@@ -129,6 +136,7 @@ export class SqlLedgerRepository implements LedgerRepository {
     const name = input.trim();
     if (!name || name.length > 60) throw new ValidationError('Use a wallet name between 1 and 60 characters.');
     return this.database.transaction(async sql => {
+      validateWalletName(name, await sql.getAllAsync<{ id: string; name: string }>('SELECT id, name FROM accounts WHERE profile_id = ?', PROFILE), walletId);
       const result = await sql.runAsync('UPDATE accounts SET name = ? WHERE id = ? AND profile_id = ?', name, walletId, PROFILE);
       if (!result.changes) throw new ValidationError('Wallet not found.');
     });

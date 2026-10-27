@@ -33,7 +33,7 @@ export type EntryCommand = EventTime & {
 export interface LedgerRepository {
   initialize(): Promise<void>;
   overview(): Promise<Overview>;
-  history(offset: number, limit: number): Promise<ActivityItem[]>;
+  history(offset: number, limit: number, walletId?: string): Promise<ActivityItem[]>;
   createWallet(command: OpeningCommand): Promise<void>;
   renameWallet(walletId: string, name: string): Promise<void>;
   setWalletArchived(walletId: string, archived: boolean): Promise<void>;

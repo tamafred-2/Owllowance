@@ -1,19 +1,40 @@
+import { AnchoredMenu, type MenuAnchor } from '../../../components/anchored-menu';
+import { AppModal } from '../../../components/app-modal';
 import { HeaderActions } from '../../../components/header-actions';
-import { Link } from 'expo-router';
-import { useState } from 'react';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { AppText, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppText, Button, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { forestSummaryColors, useTheme } from '../../../design-system/theme';
-import { type WalletKind } from '../../../domain/ledger';
+import { type Wallet, type WalletKind } from '../../../domain/ledger';
 import { WalletCard } from '../../../components/wallet-card';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
 import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
+import { RenameWalletModal } from './rename-wallet-modal';
 
 export function AccountsScreen() {
-  const { overview } = useTracker();
+  const { overview, service, refresh, error: storageError } = useTracker();
+  const { saved } = useLocalSearchParams<{ saved?: string }>();
+  const [menuWallet, setMenuWallet] = useState<Wallet | null>(null);
+  const [renameWallet, setRenameWallet] = useState<Wallet | null>(null);
+  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [menuError, setMenuError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  function openMenu(wallet: Wallet, position: MenuAnchor) { setAnchor(position); setMenuWallet(wallet); setConfirmArchive(false); setMenuError(null); }
+  async function changeArchive() {
+    if (!service || !menuWallet || inFlight.current) return;
+    inFlight.current = true; setBusy(true); setMenuError(null);
+    try {
+      await service.repository.setWalletArchived(menuWallet.id, !menuWallet.archivedAt);
+      await refresh(); setMenuWallet(null); setConfirmArchive(false);
+    } catch { setMenuError('Could not update this wallet. Try again.'); }
+    finally { inFlight.current = false; setBusy(false); }
+  }
   const { colors } = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const compact = width >= 370 && fontScale <= 1.15 && ![...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])].some(wallet => Math.abs(wallet.balanceMinor) >= 1000000000);
@@ -32,6 +53,7 @@ export function AccountsScreen() {
           </View>
           <AppText size={14} tone="secondary">Your wallets, in one view.</AppText>
         </View>
+        {saved ? <Feedback>{saved === 'income' ? 'Income saved.' : 'Expense saved.'}</Feedback> : null}
         <ForestScene visible={sceneVisible}>
           {({ night }) => {
             const palette = forestSummaryColors[night ? 'night' : 'day'];
@@ -57,7 +79,7 @@ export function AccountsScreen() {
         return <View key={kind} style={{ gap: 12 }}>
           <AppText size={14} weight="600" tone="secondary">{{ cash: 'Cash', ewallet: 'E-wallets', bank: 'Bank accounts' }[kind]}</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} />)}
+            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} />)}
           </View>
         </View>;
       })}
@@ -66,9 +88,26 @@ export function AccountsScreen() {
         <AppText size={20} weight="600">Archived wallets</AppText>
         <AppText size={14} tone="secondary">Balances remain included in your total.</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} />)}
+          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} />)}
         </View>
       </View> : null}
+      {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>
+        {!menuWallet.archivedAt ? <Button label="Add money" icon="income" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/expense', params: { mode: 'income', walletId: id, from: 'wallet' } }); }} /> : null}
+        <Button label="Edit name" icon="edit" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
+        <Button label="View history" icon="activity" variant="quiet" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
+        <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />
+        {menuError ? <Feedback error>{menuError}</Feedback> : null}
+      </AnchoredMenu> : null}
+      {renameWallet ? <RenameWalletModal wallet={renameWallet} onClose={() => setRenameWallet(null)} /> : null}
+      <AppModal title="Archive this wallet?" visible={Boolean(menuWallet) && confirmArchive} onClose={() => { if (!busy) setMenuWallet(null); }}>
+        <AppText weight="600">{menuWallet?.name}</AppText>
+        {confirmArchive ? <>
+          <AppText size={14} tone="secondary">Are you sure? Its history and balance stay in your totals. Restore it anytime to record new transactions.</AppText>
+          <Button label="Confirm archive" busy={busy} disabled={Boolean(storageError)} onPress={() => { void changeArchive(); }} />
+        </> : <Button label={menuWallet?.archivedAt ? 'Restore wallet' : 'Archive wallet'} disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet?.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />}
+        {menuError ? <Feedback error>{menuError}</Feedback> : null}
+        <Button label="Cancel" variant="quiet" disabled={busy} onPress={() => setMenuWallet(null)} />
+      </AppModal>
     </View>
   </ScrollView>;
 }

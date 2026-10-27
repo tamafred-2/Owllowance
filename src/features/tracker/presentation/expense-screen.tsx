@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { AppText, Button, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
@@ -12,9 +12,18 @@ import { useTransactionForm } from './use-entry-forms';
 export function ExpenseScreen() {
   const { overview, error } = useTracker();
   const { colors } = useTheme();
-  const [mode, setMode] = useState<'expense' | 'income'>('expense');
-  const expenseForm = useTransactionForm(() => router.replace('/?saved=expense'));
-  const incomeForm = useTransactionForm(() => router.replace('/?saved=income'), 'income');
+  const params = useLocalSearchParams<{ mode?: string; walletId?: string; from?: string }>();
+  const initialWalletId = typeof params.walletId === 'string' ? params.walletId : '';
+  // Return to the screen that opened the form; Manage wallet follows the wallet actually saved to.
+  const origin = params.from === 'manage' && initialWalletId ? 'manage' : params.from === 'wallet' ? 'wallet' : 'home';
+  const [mode, setMode] = useState<'expense' | 'income'>(params.mode === 'income' ? 'income' : 'expense');
+  const leave = (walletId: string, saved?: 'expense' | 'income') => {
+    const extra = saved ? { saved } : {};
+    if (origin === 'manage') router.replace({ pathname: '/wallet-manage', params: { id: walletId, ...extra } });
+    else router.replace({ pathname: origin === 'wallet' ? '/accounts' : '/', params: extra });
+  };
+  const expenseForm = useTransactionForm(walletId => leave(walletId, 'expense'), 'expense', initialWalletId);
+  const incomeForm = useTransactionForm(walletId => leave(walletId, 'income'), 'income', initialWalletId);
   const form = mode === 'expense' ? expenseForm : incomeForm;
   const categories = mode === 'expense' ? overview?.categories : overview?.incomeCategories;
   const [showNote, setShowNote] = useState(false);
@@ -22,7 +31,7 @@ export function ExpenseScreen() {
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
-        <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Home" icon="back" variant="quiet" disabled={form.busy} onPress={() => router.replace('/')} /></View>
+        <View style={{ alignSelf: 'flex-start' }}><Button label={origin === 'home' ? 'Back to Home' : 'Back to wallet'} icon="back" variant="quiet" disabled={form.busy} onPress={() => leave(initialWalletId)} /></View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ padding: 10, borderRadius: 14, backgroundColor: colors.muted }}><AppIcon name={mode} color={colors.accent} /></View><AppText size={28} weight="600">{mode === 'expense' ? 'Add an expense' : 'Add income'}</AppText></View>
         <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.muted }}>
           {(['expense', 'income'] as const).map(type => <Pressable key={type} accessibilityRole="tab" accessibilityLabel={type === 'expense' ? 'Expense' : 'Income'} accessibilityState={{ selected: mode === type, disabled: form.busy }} aria-selected={mode === type} disabled={form.busy}

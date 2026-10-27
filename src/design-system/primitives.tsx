@@ -22,8 +22,8 @@ export function Surface({ children, style }: { children: ReactNode; style?: Styl
   return <View style={[{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: 24 }, style]}>{children}</View>;
 }
 
-export function Button({ label, onPress, icon, variant = 'primary', disabled = false, busy = false }: {
-  label: string; onPress: () => void; icon?: IconName; variant?: 'primary' | 'secondary' | 'quiet'; disabled?: boolean; busy?: boolean;
+export function Button({ label, onPress, icon, iconOnly = false, variant = 'primary', disabled = false, busy = false }: {
+  label: string; onPress: () => void; icon?: IconName; iconOnly?: boolean; variant?: 'primary' | 'secondary' | 'quiet'; disabled?: boolean; busy?: boolean;
 }) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -34,9 +34,9 @@ export function Button({ label, onPress, icon, variant = 'primary', disabled = f
       backgroundColor: variant === 'primary' ? colors.accent : variant === 'secondary' ? colors.muted : 'transparent',
       opacity: disabled || busy ? 0.55 : pressed ? 0.8 : 1,
       borderColor: focused ? colors.accent : 'transparent', borderWidth: 2,
-    }]}>
+    }, iconOnly && { width: 48, height: 48, paddingHorizontal: 0, paddingVertical: 0 }]}>
     {busy ? <ActivityIndicator color={color} /> : icon ? <AppIcon name={icon} color={color} /> : null}
-    <AppText size={14} weight="600" style={{ color }}>{busy ? 'Saving…' : label}</AppText>
+    {!iconOnly ? <AppText size={14} weight="600" style={{ color }}>{busy ? 'Saving…' : label}</AppText> : null}
   </Pressable>;
 }
 
