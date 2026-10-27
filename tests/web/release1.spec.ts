@@ -299,8 +299,14 @@ test('recurring bill set up on Plan shows on Home and Paid records it once', asy
   await expect(due).toContainText('Due today');
   await due.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('payments-due.png'), fullPage: true });
+  await expect(page.getByTestId('reminder-badge')).toHaveText('1');
+  await page.getByRole('button', { name: 'Reminders, 1 due', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Reminders', exact: true })).toBeVisible();
+  await expect(page.getByText('Available in the Android app.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
   await page.getByRole('button', { name: 'Paid', exact: true }).first().click();
   await expect(page.getByText('Internet recorded.', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('reminder-badge')).toHaveCount(0);
   await expect(due).not.toContainText('Due today');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('850.00');

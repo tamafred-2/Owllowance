@@ -12,7 +12,7 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   expect(before.x).toBeGreaterThan(300);
   expect(before.y).toBeGreaterThan(450);
   const greeting = (await page.getByRole('heading', { name: 'Home', exact: true }).boundingBox())!;
-  const notifications = (await page.getByRole('button', { name: 'Notifications, coming soon', exact: true }).boundingBox())!;
+  const notifications = (await page.getByRole('button', { name: 'Reminders', exact: true }).boundingBox())!;
   expect(Math.abs(greeting.y + greeting.height / 2 - notifications.y - notifications.height / 2)).toBeLessThan(2);
   await page.mouse.move(before.x + 24, before.y + 24);
   await page.mouse.down();
@@ -35,7 +35,7 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await expect(navigation.getByText('Add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Total balance', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Recent activity', { exact: true })).toHaveCount(0);
-  for (const label of ['Notifications', 'Goals', 'Debt']) {
+  for (const label of ['Goals', 'Debt']) {
     await expect(page.getByRole('button', { name: `${label}, coming soon`, exact: true })).toBeDisabled();
   }
   for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights']) {
@@ -69,7 +69,7 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
     await page.getByRole('link', { name: route, exact: true }).click();
     await expect(page.getByRole('heading', { name: route, exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`${route.toLowerCase()}-header.png`), fullPage: true });
-    await expect(page.getByRole('button', { name: 'Notifications, coming soon', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Reminders', exact: true })).toBeEnabled();
     await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeEnabled();
   }
 });

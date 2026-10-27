@@ -12,6 +12,7 @@ import type { Settings, ThemePreference } from '../../../domain/ledger';
 import { ValidationError } from '../../../domain/money';
 import { pickTextFile, saveTextFile } from '../../../platform/files';
 import { useTracker } from './tracker-context';
+import { ReminderToggle } from './reminders';
 
 const appVersion = Constants.expoConfig?.version ?? '0.1.0';
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -73,6 +74,10 @@ export function SettingsScreen() {
           {([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as [ThemePreference, string][]).map(([value, label]) =>
             <Chip key={value} label={label} selected={settings?.theme === value} disabled={disabled} onPress={() => { void update({ theme: value }); }} />)}
         </View>
+      </Surface>
+      <Surface style={{ gap: 14 }}>
+        <AppText size={18} weight="600">Reminders</AppText>
+        <ReminderToggle />
       </Surface>
       <Pressable accessibilityRole="link" accessibilityLabel="Manage categories" onPress={() => router.push({ pathname: '/categories', params: { from: back } })}>
         <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

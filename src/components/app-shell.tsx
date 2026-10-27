@@ -10,6 +10,7 @@ import { OpeningScreen } from './opening-screen';
 import { OwlAddShape } from './owl-add-shape';
 import { SheetHost } from '../features/tracker/presentation/entry-sheet';
 import { useOpenSheet } from '../features/tracker/presentation/sheet-context';
+import { useReminderSync } from '../features/tracker/presentation/reminders';
 import * as SplashScreen from 'expo-splash-screen';
 import { finishNativeLoading, hasNativeLoading } from '../platform/native-loading';
 
@@ -34,6 +35,11 @@ function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activit
 }
 
 // The main Add action opens a new expense as a sheet over the current page.
+function ReminderSync() {
+  useReminderSync();
+  return null;
+}
+
 function AddExpenseButton({ wide = false }: { wide?: boolean }) {
   const open = useOpenSheet();
   const { colors } = useTheme();
@@ -64,6 +70,7 @@ export function AppShell() {
   return <KeyboardAvoidingView onLayout={() => { finishNativeLoading(); void SplashScreen.hideAsync().catch(() => {}); }} style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'android' ? 'height' : undefined}>
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right', 'bottom']}>
     <SheetHost>
+    <ReminderSync />
     <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }}>
       {wide ? <View style={[styles.sidebar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ padding: 14, gap: 4, marginBottom: 36 }}>

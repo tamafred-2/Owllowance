@@ -5,6 +5,7 @@ import type { RecurringCommand } from '../src/domain/ledger';
 import { addDays, eventTime } from '../src/domain/date';
 import { describeSchedule, dueDates } from '../src/domain/recurring';
 import { validateBackup } from '../src/domain/backup';
+import { reminderPlan } from '../src/domain/reminders';
 import { fixture, time } from './sqlite-fixture';
 
 test('schedules clamp month ends, follow weekdays and count day intervals from the start', () => {
@@ -87,4 +88,18 @@ test('backups carry recurring items; older version 4 backups still restore', asy
   broken.records.recurring_occurrences[0].recurring_id = randomUUID();
   assert.throws(() => validateBackup(broken), /missing item/);
   assert.ok(time);
+});
+
+test('reminders group one notification per day, fold overdue into today and never show amounts', () => {
+  const base = { type: 'expense' as const, amountMinor: 99_900, walletId: 'w', walletName: 'Cash', categoryId: 'c', categoryName: 'Bills', iconKey: 'bills', colorToken: 'accent', overdue: false };
+  const plan = reminderPlan([
+    { ...base, recurringId: '1', name: 'Rent', dueDate: '2026-10-20', overdue: true },
+    { ...base, recurringId: '2', name: 'Internet', dueDate: '2026-10-27' },
+    { ...base, recurringId: '3', name: 'Water', dueDate: '2026-10-29' },
+  ], '2026-10-27');
+  assert.deepEqual(plan, [
+    { localDate: '2026-10-27', title: 'Payments due', body: 'Rent and Internet are due today.' },
+    { localDate: '2026-10-29', title: 'Payments due', body: 'Water is due.' },
+  ]);
+  assert.ok(plan.every(item => !/₱|999/.test(item.body)));
 });

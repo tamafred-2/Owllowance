@@ -35,9 +35,9 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 // hiddenBalances: wallet IDs (or NET_WORTH) whose balance is masked on screen.
 export type WalletView = 'grid' | 'list' | 'cards';
 // deckWallet: the wallet last left in front of the card view.
-export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
+export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; reminders: boolean; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
 export const NET_WORTH = 'net-worth';
-export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
+export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, reminders: false, hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
 export type RecurringRule = {
   id: string; name: string; type: CategoryType; amountMinor: number; walletId: string; walletName: string;
   categoryId: string; categoryName: string; iconKey: string; colorToken: string;
