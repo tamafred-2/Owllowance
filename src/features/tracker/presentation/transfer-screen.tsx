@@ -50,7 +50,7 @@ export function TransferScreen() {
   if (wallets.length < 2) return <View style={{ padding: 24, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' }}>
     <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
     <AppText tone="secondary">You need at least two active wallets to move money between them.</AppText>
-    <Button label="Add wallet" icon="add" onPress={() => router.replace('/wallet-new')} />
+    <Button label="Add wallet" onPress={() => router.replace('/wallet-new')} />
     <Button label="Go back" variant="quiet" onPress={() => leaveTo(origin, originWalletId)} />
   </View>;
   const from = wallets.find(wallet => wallet.id === form.fromWalletId);

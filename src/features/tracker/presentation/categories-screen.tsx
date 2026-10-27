@@ -100,7 +100,7 @@ export function CategoriesScreen() {
         {shown.filter(item => !item.archivedAt).map(row)}
         {shown.some(item => item.archivedAt) ? <AppText size={13} weight="600" tone="secondary" style={{ paddingTop: 16 }}>Archived</AppText> : null}
         {shown.filter(item => item.archivedAt).map(row)}
-        <View style={{ paddingTop: 12 }}><Button label="Add category" icon="add" variant="secondary" onPress={() => setEditing('new')} /></View>
+        <View style={{ paddingTop: 12 }}><Button label="Add category" variant="secondary" onPress={() => setEditing('new')} /></View>
       </Surface>
       <AppText size={12} tone="secondary">Archived categories stay on past transactions but can&apos;t be chosen for new ones.</AppText>
     </View>

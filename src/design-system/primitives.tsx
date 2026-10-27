@@ -44,12 +44,13 @@ export function Surface({ children, style }: { children: ReactNode; style?: Styl
   return <View style={[{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: 24 }, style]}>{children}</View>;
 }
 
-export function Button({ label, onPress, icon, iconOnly = false, variant = 'primary', disabled = false, busy = false }: {
-  label: string; onPress: () => void; icon?: IconName; iconOnly?: boolean; variant?: 'primary' | 'secondary' | 'quiet'; disabled?: boolean; busy?: boolean;
+// `danger` tints quiet/secondary buttons for actions that hide or remove things.
+export function Button({ label, onPress, icon, iconOnly = false, variant = 'primary', disabled = false, busy = false, danger = false }: {
+  label: string; onPress: () => void; icon?: IconName; iconOnly?: boolean; variant?: 'primary' | 'secondary' | 'quiet'; disabled?: boolean; busy?: boolean; danger?: boolean;
 }) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
-  const color = variant === 'primary' ? colors.onAccent : colors.accent;
+  const color = variant === 'primary' ? colors.onAccent : danger ? colors.error : colors.accent;
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: disabled || busy, busy }}
     aria-disabled={disabled || busy} aria-busy={busy}
     disabled={disabled || busy} onPress={onPress} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={({ pressed }) => [styles.button, {

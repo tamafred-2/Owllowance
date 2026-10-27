@@ -42,7 +42,7 @@ export function NewWalletScreen() {
         <FormField label="Wallet name" value={form.name} onChangeText={form.setName} maxLength={60} editable={!form.busy} />
         <FormField label="Opening balance (PHP)" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" editable={!form.busy} hint="Money already in this wallet. This is not income." />
         {form.error ? <Feedback error>{form.error}</Feedback> : null}
-        <Button label="Create wallet" icon="add" busy={form.busy} disabled={Boolean(error)} onPress={() => { void form.submit(); }} />
+        <Button label="Create wallet" busy={form.busy} disabled={Boolean(error)} onPress={() => { void form.submit(); }} />
       </Surface>
     </View>
   </ScrollView>;

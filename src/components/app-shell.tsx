@@ -58,7 +58,7 @@ export function AppShell() {
         <NavItem href="/plan" label="Plan" icon="plan" compact={!wide} />
         <NavItem href="/activity" label="History" icon="activity" />
         {canAdd ? <View style={{ marginTop: 24 }}><Link href="/expense" asChild><Pressable accessibilityRole="link" style={StyleSheet.flatten([styles.add, { backgroundColor: colors.accent }])}>
-          <AppIcon name="add" color={colors.onAccent} /><AppText size={14} weight="600" style={{ color: colors.onAccent }}>Add transaction</AppText>
+          <AppText size={14} weight="600" style={{ color: colors.onAccent }}>Add transaction</AppText>
         </Pressable></Link></View> : null}
         <View style={{ flex: 1 }} />
       </View> : (overview?.wallet || overview?.archivedWallets.length) ? null : <View style={[styles.topbar, { borderColor: colors.border, backgroundColor: colors.surface }]}>

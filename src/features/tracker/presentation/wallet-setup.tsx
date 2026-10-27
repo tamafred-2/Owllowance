@@ -14,7 +14,7 @@ export function WalletSetup() {
       <FormField label="Opening balance (PHP)" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" editable={!form.busy}
         hint="Enter what is in this wallet now. An opening balance is not income." />
       {form.error ? <Feedback error>{form.error}</Feedback> : null}
-      <Button label="Create wallet" icon="add" busy={form.busy} onPress={() => { void form.submit(); }} />
+      <Button label="Create wallet" busy={form.busy} onPress={() => { void form.submit(); }} />
       <Button label="Skip — start with Cash at ₱0.00" variant="quiet" disabled={form.busy} onPress={() => { void form.submit(true); }} />
     </Surface>
   </View>;

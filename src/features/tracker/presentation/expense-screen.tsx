@@ -124,7 +124,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
             {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} /></View> : null}
           </View>
           {showNote ? <FormField label="Note (optional)" value={form.note} onChangeText={form.setNote} maxLength={500} multiline editable={!busy} placeholder="What was it for?" /> :
-            <Button label="Add a note" icon="add" variant="quiet" disabled={busy} onPress={() => setShowNote(true)} />}
+            <Button label="Add a note" variant="quiet" disabled={busy} onPress={() => setShowNote(true)} />}
           {form.error ? <Feedback error>{form.error}</Feedback> : null}
           <Button label={editing ? 'Save changes' : mode === 'expense' ? 'Save expense' : 'Save income'} icon="check" busy={form.busy} disabled={Boolean(error) || deleting} onPress={() => { void form.submit(); }} />
           {editing ? <Button label={mode === 'expense' ? 'Delete expense' : 'Delete income'} icon="delete" variant="quiet" disabled={busy || Boolean(error)} onPress={() => { setDeleteError(null); setConfirmDelete(true); }} /> : null}

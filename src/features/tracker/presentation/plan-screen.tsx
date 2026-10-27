@@ -107,7 +107,7 @@ export function PlanScreen() {
       <Surface style={{ gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <AppText accessibilityRole="header" size={20} weight="600">Budgets</AppText>
-          {canAdd ? <Button label="Add budget" icon="add" variant="quiet" onPress={() => setEditing('new')} /> : null}
+          {canAdd ? <Button label="Add budget" variant="quiet" onPress={() => setEditing('new')} /> : null}
         </View>
         {budgets.length ? <View testID="budget-list">{budgets.map((budget, index) => <View key={budget.id} style={{ borderTopWidth: index ? 1 : 0, borderColor: colors.border }}>
           <BudgetProgress budget={budget} onPress={() => setEditing(budget)} />

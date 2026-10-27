@@ -71,7 +71,7 @@ export function AccountsScreen() {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <AppText size={20} weight="600">Your wallets</AppText>
         <Link href="/wallet-new" asChild><Pressable accessibilityRole="link" accessibilityLabel="Add wallet" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8 }}>
-          <AppIcon name="add" color={colors.accent} /><AppText size={14} weight="600" style={{ color: colors.accent }}>Add wallet</AppText>
+          <AppText size={14} weight="600" style={{ color: colors.accent }}>Add wallet</AppText>
         </Pressable></Link>
       </View>
       {(['cash', 'ewallet', 'bank'] as WalletKind[]).map(kind => {
@@ -97,7 +97,7 @@ export function AccountsScreen() {
         {!menuWallet.archivedAt && overview.wallets.length > 1 ? <Button label="Transfer" icon="transfer" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/transfer', params: { walletId: id, from: 'wallet' } }); }} /> : null}
         <Button label="Edit name" icon="edit" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
         <Button label="View history" icon="activity" variant="quiet" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
-        <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />
+        <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" danger={!menuWallet.archivedAt} disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />
         {menuError ? <Feedback error>{menuError}</Feedback> : null}
       </AnchoredMenu> : null}
       {renameWallet ? <RenameWalletModal wallet={renameWallet} onClose={() => setRenameWallet(null)} /> : null}
