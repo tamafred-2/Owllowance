@@ -2,12 +2,14 @@ import { MAX_MINOR, ValidationError } from './money';
 
 // Portable, unencrypted JSON backup. Rows mirror the storage columns of schema v4.
 export const BACKUP_FORMAT = 'owllowance-backup';
-export const BACKUP_SCHEMA_VERSION = 4;
+export const BACKUP_SCHEMA_VERSION = 5;
+// Version 4 files (before recurring items) still restore; their recurring tables are empty.
 const MAX_RECORDS = 500_000;
 
 type Row = Record<string, string | number | null>;
 export type BackupRecords = {
   profiles: Row[]; accounts: Row[]; categories: Row[]; transactions: Row[]; entries: Row[]; budgets: Row[]; settings: Row[];
+  recurring: Row[]; recurring_occurrences: Row[];
 };
 export type BackupEnvelope = {
   format: typeof BACKUP_FORMAT; schemaVersion: number; exportedAt: string; appVersion: string; currency: 'PHP'; records: BackupRecords;
@@ -25,9 +27,11 @@ export const backupColumns: Record<keyof BackupRecords, string[]> = {
   entries: ['id', 'transaction_id', 'profile_id', 'account_id', 'amount_minor'],
   budgets: ['id', 'profile_id', 'category_id', 'period', 'start_date', 'end_date', 'limit_minor'],
   settings: ['key', 'value'],
+  recurring: ['id', 'profile_id', 'name', 'type', 'amount_minor', 'account_id', 'category_id', 'frequency', 'every', 'start_date', 'paused'],
+  recurring_occurrences: ['recurring_id', 'due_date', 'status', 'transaction_id'],
 };
-const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor']);
-const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date']);
+const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor', 'every', 'paused']);
+const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id']);
 const uuid = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i;
 
 function fail(message: string): never { throw new ValidationError(`This backup can't be restored: ${message}`); }
@@ -37,13 +41,14 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   if (!input || typeof input !== 'object') fail('the file is not an Owllowance backup.');
   const candidate = input as Partial<BackupEnvelope>;
   if (candidate.format !== BACKUP_FORMAT) fail('the file is not an Owllowance backup.');
-  if (candidate.schemaVersion !== BACKUP_SCHEMA_VERSION) fail('it was made by an unsupported version of Owllowance.');
+  if (candidate.schemaVersion !== BACKUP_SCHEMA_VERSION && candidate.schemaVersion !== 4) fail('it was made by an unsupported version of Owllowance.');
   if (candidate.currency !== 'PHP') fail('its currency is not supported.');
   if (typeof candidate.exportedAt !== 'string' || !Number.isFinite(Date.parse(candidate.exportedAt))) fail('its export date is invalid.');
   const records = candidate.records;
   if (!records || typeof records !== 'object') fail('records are missing.');
   let count = 0;
   for (const [table, columns] of Object.entries(backupColumns) as [keyof BackupRecords, string[]][]) {
+    if (candidate.schemaVersion === 4 && (table === 'recurring' || table === 'recurring_occurrences') && records[table] === undefined) records[table] = [];
     const rows = records[table];
     if (!Array.isArray(rows)) fail(`${table} are missing.`);
     count += rows.length;
@@ -84,6 +89,16 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     } else if (own.length !== 1) fail('a transaction has the wrong number of entries.');
   }
   for (const budget of budgets) if (!categoryIds.has(String(budget.category_id))) fail('a budget refers to a missing category.');
+  const ruleIds = ids(records.recurring);
+  if (ruleIds.size !== records.recurring.length) fail('it contains duplicate records.');
+  for (const rule of records.recurring) {
+    if (!uuid.test(String(rule.id))) fail('it contains an invalid identifier.');
+    if (!accountIds.has(String(rule.account_id)) || !categoryIds.has(String(rule.category_id))) fail('a recurring item refers to a missing record.');
+  }
+  for (const occurrence of records.recurring_occurrences) {
+    if (!ruleIds.has(String(occurrence.recurring_id))) fail('a recurring payment refers to a missing item.');
+    if (occurrence.transaction_id !== null && !transactionIds.has(String(occurrence.transaction_id))) fail('a recurring payment refers to a missing transaction.');
+  }
   const balances = new Map<string, number>();
   let total = 0;
   for (const entry of entries) {

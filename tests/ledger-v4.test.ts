@@ -200,7 +200,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
   // Recreate the v3 shape: one entry per transaction, no linked fees, budgets or settings.
   f.connection.sqlite.exec(`
     CREATE TEMP TABLE t3 AS SELECT ${columns} FROM transactions; CREATE TEMP TABLE e3 AS SELECT * FROM entries;
-    DROP TABLE entries; DROP TABLE transactions; DROP TABLE budgets; DROP TABLE settings; DROP TABLE restore_snapshots;
+    DROP TABLE recurring_occurrences; DROP TABLE recurring; DROP TABLE entries; DROP TABLE transactions; DROP TABLE budgets; DROP TABLE settings; DROP TABLE restore_snapshots;
     CREATE TABLE transactions (id TEXT PRIMARY KEY NOT NULL, profile_id TEXT NOT NULL REFERENCES profiles(id),
       type TEXT NOT NULL CHECK (type IN ('expense','income','opening')), occurred_at TEXT NOT NULL, local_date TEXT NOT NULL,
       time_zone TEXT NOT NULL, offset_minutes INTEGER NOT NULL, note TEXT NOT NULL, category_id TEXT,
@@ -209,7 +209,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
       amount_minor INTEGER NOT NULL, FOREIGN KEY (transaction_id, profile_id) REFERENCES transactions(id, profile_id),
       FOREIGN KEY (account_id, profile_id) REFERENCES accounts(id, profile_id));
     INSERT INTO transactions SELECT * FROM t3; INSERT INTO entries SELECT * FROM e3; DROP TABLE t3; DROP TABLE e3;
-    DELETE FROM categories WHERE name = 'Fees'; DELETE FROM schema_migrations WHERE version = 4; PRAGMA user_version = 3;`);
+    DELETE FROM categories WHERE name = 'Fees'; DELETE FROM schema_migrations WHERE version >= 4; PRAGMA user_version = 3;`);
   const before = f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all();
   const repository = new SqlLedgerRepository(new Database(f.connection));
   f.connection.failV4Migration = true;
@@ -217,7 +217,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
   assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 3);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   await repository.initialize(); await repository.initialize();
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 5);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   const view = await repository.overview();
   assert.deepEqual([view.totalBalanceMinor, view.spentMinor], [98_750, 1_250]);

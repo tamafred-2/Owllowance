@@ -1,5 +1,6 @@
 import type { BackupEnvelope } from './backup';
 import type { EventTime } from './date';
+import type { Frequency } from './recurring';
 
 export type WalletKind = 'cash' | 'bank' | 'ewallet';
 export const walletKindLabels: Record<WalletKind, string> = { cash: 'Cash', bank: 'Bank', ewallet: 'E-wallet' };
@@ -37,6 +38,18 @@ export type WalletView = 'grid' | 'list' | 'cards';
 export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
 export const NET_WORTH = 'net-worth';
 export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
+export type RecurringRule = {
+  id: string; name: string; type: CategoryType; amountMinor: number; walletId: string; walletName: string;
+  categoryId: string; categoryName: string; iconKey: string; colorToken: string;
+  frequency: Frequency; every: number; startDate: string; paused: boolean; nextDue: string | null;
+};
+// One unhandled occurrence: overdue (before today) or due within the next week.
+export type DueItem = Omit<RecurringRule, 'id' | 'paused' | 'nextDue' | 'frequency' | 'every' | 'startDate'> & { recurringId: string; dueDate: string; overdue: boolean };
+export type RecurringCommand = {
+  id: string; name: string; type: CategoryType; amountMinor: number; walletId: string; categoryId: string;
+  frequency: Frequency; every: number; startDate: string;
+};
+export type PayRecurringCommand = EntryCommand & { recurringId: string; dueDate: string };
 export type Overview = {
   wallet: Wallet | null;
   wallets: Wallet[];
@@ -52,6 +65,7 @@ export type Overview = {
   expenseCount: number;
   recent: ActivityItem[];
   budgets: Budget[];
+  due: DueItem[];
   settings: Settings;
   restoreSnapshotAt: string | null;
 };
@@ -96,6 +110,12 @@ export interface LedgerRepository {
   report(fromDate: string, toDateExclusive: string): Promise<Report>;
   saveSettings(settings: Partial<Omit<Settings, 'hiddenBalances'>>): Promise<void>;
   setBalanceHidden(target: string, hidden: boolean): Promise<void>;
+  recurring(): Promise<RecurringRule[]>;
+  saveRecurring(command: RecurringCommand): Promise<void>;
+  setRecurringPaused(id: string, paused: boolean): Promise<void>;
+  deleteRecurring(id: string): Promise<void>;
+  payRecurring(command: PayRecurringCommand): Promise<void>;
+  skipRecurring(recurringId: string, dueDate: string): Promise<void>;
   exportBackup(appVersion: string): Promise<BackupEnvelope>;
   restoreBackup(envelope: BackupEnvelope): Promise<void>;
   undoRestore(): Promise<void>;

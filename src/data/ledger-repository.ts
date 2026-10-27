@@ -1,10 +1,11 @@
 import { validateWalletName } from '../domain/wallet-name';
 import type {
-  ActivityItem, Budget, BudgetCommand, CategoryCommand, EditEntryCommand, EntryCommand, HistoryFilter, LedgerRepository,
-  ManagedCategory, OpeningCommand, Overview, Report, Settings, TransferCommand, Wallet,
+  ActivityItem, Budget, BudgetCommand, CategoryCommand, DueItem, EditEntryCommand, EntryCommand, HistoryFilter, LedgerRepository,
+  ManagedCategory, OpeningCommand, Overview, PayRecurringCommand, RecurringCommand, RecurringRule, Report, Settings, TransferCommand, Wallet,
 } from '../domain/ledger';
 import { defaultSettings, NET_WORTH } from '../domain/ledger';
-import { assertEventTime, assertLocalDate, eventTime } from '../domain/date';
+import { addDays, assertEventTime, assertLocalDate, eventTime } from '../domain/date';
+import { assertSchedule, dueDates } from '../domain/recurring';
 import { addMinor, assertMinor, ValidationError } from '../domain/money';
 import { budgetWindow } from '../domain/budget';
 import { BACKUP_FORMAT, BACKUP_SCHEMA_VERSION, backupColumns, validateBackup, type BackupEnvelope, type BackupRecords } from '../domain/backup';
@@ -157,7 +158,7 @@ function envelopeOf(records: BackupRecords, appVersion: string): BackupEnvelope 
 
 // Replaces every ledger row inside the caller's transaction; constraints and triggers re-check the data.
 async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promise<void> {
-  await sql.execAsync(`DELETE FROM budgets; DELETE FROM entries; DELETE FROM transactions WHERE linked_id IS NOT NULL;
+  await sql.execAsync(`DELETE FROM recurring_occurrences; DELETE FROM recurring; DELETE FROM budgets; DELETE FROM entries; DELETE FROM transactions WHERE linked_id IS NOT NULL;
     DELETE FROM transactions; DELETE FROM categories; DELETE FROM accounts; DELETE FROM profiles; DELETE FROM settings;`);
   const insert = async (table: keyof BackupRecords, rows: BackupRecords[keyof BackupRecords]) => {
     const columns = backupColumns[table];
@@ -172,8 +173,54 @@ async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promi
   await insert('transactions', records.transactions.filter(row => row.linked_id !== null));
   await insert('entries', records.entries);
   await insert('budgets', records.budgets);
+  await insert('recurring', records.recurring);
+  await insert('recurring_occurrences', records.recurring_occurrences);
   await insert('settings', records.settings.filter(row => ['theme', 'walletView', 'deckWallet', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
   if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new ValidationError("This backup can't be restored: its records don't match.");
+}
+
+function assertEntryCommand(command: EntryCommand): void {
+  assertId(command.id); assertId(command.walletId); assertId(command.categoryId); assertEventTime(command); assertMinor(command.amountMinor);
+  if (command.amountMinor <= 0) throw new ValidationError('Amount must be greater than zero.');
+  assertNote(command.note);
+}
+
+// Posts an income/expense inside the caller's transaction (shared by entries and recurring payments).
+async function postEntry(sql: SqlConnection, command: EntryCommand, type: 'expense' | 'income'): Promise<void> {
+  if (await alreadyPosted(sql, command, type)) return;
+  const balance = await activeBalance(sql, command.walletId);
+  if (balance === null) throw new ValidationError('Choose an available wallet.');
+  if (!await sql.getFirstAsync("SELECT id FROM categories WHERE id = ? AND profile_id = ? AND type = ? AND archived_at IS NULL", command.categoryId, PROFILE, type)) {
+    throw new ValidationError('Choose an available category.');
+  }
+  const signed = type === 'expense' ? -command.amountMinor : command.amountMinor;
+  addMinor(balance, signed);
+  addMinor(await totalBalance(sql), signed);
+  addMinor(await typeTotal(sql, type), command.amountMinor);
+  await insertTransaction(sql, command, type);
+}
+
+type RuleRow = Omit<RecurringRule, 'paused' | 'nextDue'> & { paused: number };
+const ruleSelect = `SELECT r.id, r.name, r.type, r.amount_minor AS amountMinor, r.account_id AS walletId, a.name AS walletName,
+  r.category_id AS categoryId, c.name AS categoryName, c.icon_key AS iconKey, c.color_token AS colorToken,
+  r.frequency, r.every, r.start_date AS startDate, r.paused
+  FROM recurring r JOIN accounts a ON a.id = r.account_id JOIN categories c ON c.id = r.category_id`;
+const LOOKBACK_DAYS = 60;
+
+// Unhandled occurrences from up to 60 days back through the next 7 days, oldest first.
+async function dueItems(sql: SqlConnection, today: string): Promise<DueItem[]> {
+  const rules = await sql.getAllAsync<RuleRow>(`${ruleSelect} WHERE r.paused = 0 ORDER BY r.rowid`);
+  const handled = new Set((await sql.getAllAsync<{ recurring_id: string; due_date: string }>(
+    'SELECT recurring_id, due_date FROM recurring_occurrences WHERE due_date >= ?', addDays(today, -LOOKBACK_DAYS))).map(row => `${row.recurring_id}|${row.due_date}`));
+  const items: DueItem[] = [];
+  for (const rule of rules) {
+    for (const dueDate of dueDates(rule, addDays(today, -LOOKBACK_DAYS), addDays(today, 7))) {
+      if (handled.has(`${rule.id}|${dueDate}`)) continue;
+      const { id, paused: _paused, frequency: _frequency, every: _every, startDate: _startDate, ...rest } = rule;
+      items.push({ ...rest, recurringId: id, dueDate, overdue: dueDate < today });
+    }
+  }
+  return items.sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.name.localeCompare(right.name));
 }
 
 export class SqlLedgerRepository implements LedgerRepository {
@@ -217,7 +264,7 @@ export class SqlLedgerRepository implements LedgerRepository {
         wallet: wallets[0] ?? null, wallets, archivedWallets, totalBalanceMinor: assertMinor(await totalBalance(sql)), todaySpentMinor: assertMinor(todaySpent?.amount ?? 0), spentMinor: assertMinor(totals?.spentMinor ?? 0), expenseCount: totals?.expenseCount ?? 0,
         categories: await sql.getAllAsync("SELECT id, name, icon_key AS iconKey, color_token AS colorToken FROM categories WHERE type = 'expense' AND archived_at IS NULL ORDER BY rowid"),
         recent: await sql.getAllAsync<ActivityItem>(activityQuery, 5, 0),
-        budgets, settings: await readSettings(sql),
+        budgets, due: await dueItems(sql, today), settings: await readSettings(sql),
         restoreSnapshotAt: (await sql.getFirstAsync<{ created_at: string }>('SELECT created_at FROM restore_snapshots WHERE id = 1'))?.created_at ?? null,
       };
     });
@@ -286,22 +333,8 @@ export class SqlLedgerRepository implements LedgerRepository {
   addIncome(command: EntryCommand): Promise<void> { return this.addEntry(command, 'income'); }
 
   private addEntry(command: EntryCommand, type: 'expense' | 'income'): Promise<void> {
-    assertId(command.id); assertId(command.walletId); assertId(command.categoryId); assertEventTime(command); assertMinor(command.amountMinor);
-    if (command.amountMinor <= 0) throw new ValidationError('Amount must be greater than zero.');
-    assertNote(command.note);
-    return this.database.transaction(async sql => {
-      if (await alreadyPosted(sql, command, type)) return;
-      const balance = await activeBalance(sql, command.walletId);
-      if (balance === null) throw new ValidationError('Choose an available wallet.');
-      if (!await sql.getFirstAsync("SELECT id FROM categories WHERE id = ? AND profile_id = ? AND type = ? AND archived_at IS NULL", command.categoryId, PROFILE, type)) {
-        throw new ValidationError('Choose an available category.');
-      }
-      const signed = type === 'expense' ? -command.amountMinor : command.amountMinor;
-      addMinor(balance, signed);
-      addMinor(await totalBalance(sql), signed);
-      addMinor(await typeTotal(sql, type), command.amountMinor);
-      await insertTransaction(sql, command, type);
-    });
+    assertEntryCommand(command);
+    return this.database.transaction(sql => postEntry(sql, command, type));
   }
 
   addTransfer(command: TransferCommand): Promise<void> {
@@ -503,6 +536,83 @@ export class SqlLedgerRepository implements LedgerRepository {
     }
     return this.database.transaction(async sql => {
       for (const [key, value] of rows) await sql.runAsync('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', key, value);
+    });
+  }
+
+  recurring(): Promise<RecurringRule[]> {
+    return this.database.transaction(async sql => {
+      const today = eventTime().localDate;
+      const handled = new Set((await sql.getAllAsync<{ recurring_id: string; due_date: string }>('SELECT recurring_id, due_date FROM recurring_occurrences WHERE due_date >= ?', addDays(today, -LOOKBACK_DAYS)))
+        .map(row => `${row.recurring_id}|${row.due_date}`));
+      return (await sql.getAllAsync<RuleRow>(`${ruleSelect} ORDER BY r.paused, r.rowid`)).map(row => ({
+        ...row, paused: row.paused === 1,
+        nextDue: dueDates(row, addDays(today, -LOOKBACK_DAYS), addDays(today, 400)).find(date => !handled.has(`${row.id}|${date}`)) ?? null,
+      }));
+    });
+  }
+
+  saveRecurring(command: RecurringCommand): Promise<void> {
+    assertId(command.id); assertId(command.walletId); assertId(command.categoryId); assertMinor(command.amountMinor);
+    if (command.amountMinor <= 0) throw new ValidationError('Amount must be greater than zero.');
+    if (command.type !== 'expense' && command.type !== 'income') throw new ValidationError('Choose expense or income.');
+    const name = command.name.trim();
+    if (!name || name.length > 60) throw new ValidationError('Use a name between 1 and 60 characters.');
+    assertSchedule(command);
+    return this.database.transaction(async sql => {
+      if (await activeBalance(sql, command.walletId) === null) throw new ValidationError('Choose an available wallet.');
+      if (!await sql.getFirstAsync('SELECT id FROM categories WHERE id = ? AND profile_id = ? AND type = ?', command.categoryId, PROFILE, command.type)) {
+        throw new ValidationError('Choose a category of the same type.');
+      }
+      await sql.runAsync(`INSERT INTO recurring (id, profile_id, name, type, amount_minor, account_id, category_id, frequency, every, start_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name, type = excluded.type, amount_minor = excluded.amount_minor,
+        account_id = excluded.account_id, category_id = excluded.category_id, frequency = excluded.frequency, every = excluded.every, start_date = excluded.start_date`,
+      command.id, PROFILE, name, command.type, command.amountMinor, command.walletId, command.categoryId, command.frequency, command.every, command.startDate);
+    });
+  }
+
+  setRecurringPaused(id: string, paused: boolean): Promise<void> {
+    assertId(id);
+    return this.database.transaction(async sql => {
+      const result = await sql.runAsync('UPDATE recurring SET paused = ? WHERE id = ? AND profile_id = ?', paused ? 1 : 0, id, PROFILE);
+      if (!result.changes) throw new ValidationError('Recurring item not found.');
+    });
+  }
+
+  // Past payments stay in history; only the schedule and its handled-occurrence marks go.
+  deleteRecurring(id: string): Promise<void> {
+    assertId(id);
+    return this.database.transaction(async sql => {
+      await sql.runAsync('DELETE FROM recurring_occurrences WHERE recurring_id = ?', id);
+      await sql.runAsync('DELETE FROM recurring WHERE id = ? AND profile_id = ?', id, PROFILE);
+    });
+  }
+
+  // Records the real transaction and marks the occurrence paid in one database transaction.
+  payRecurring(command: PayRecurringCommand): Promise<void> {
+    assertEntryCommand(command); assertId(command.recurringId); assertLocalDate(command.dueDate);
+    return this.database.transaction(async sql => {
+      const occurrence = await sql.getFirstAsync<{ status: string; transaction_id: string | null }>(
+        'SELECT status, transaction_id FROM recurring_occurrences WHERE recurring_id = ? AND due_date = ?', command.recurringId, command.dueDate);
+      if (occurrence) {
+        if (occurrence.status === 'paid' && occurrence.transaction_id === command.id) return; // A retry of this payment.
+        throw new ValidationError('This payment was already handled.');
+      }
+      const rule = await sql.getFirstAsync<RuleRow>(`${ruleSelect} WHERE r.id = ?`, command.recurringId);
+      if (!rule) throw new ValidationError('Recurring item not found.');
+      if (!dueDates(rule, command.dueDate, command.dueDate).length) throw new ValidationError('That date is not on this schedule.');
+      if (command.categoryId !== rule.categoryId) throw new ValidationError('Choose this item\'s category.');
+      await postEntry(sql, command, rule.type);
+      await sql.runAsync("INSERT INTO recurring_occurrences (recurring_id, due_date, status, transaction_id) VALUES (?, ?, 'paid', ?)", command.recurringId, command.dueDate, command.id);
+    });
+  }
+
+  skipRecurring(recurringId: string, dueDate: string): Promise<void> {
+    assertId(recurringId); assertLocalDate(dueDate);
+    return this.database.transaction(async sql => {
+      const rule = await sql.getFirstAsync<RuleRow>(`${ruleSelect} WHERE r.id = ?`, recurringId);
+      if (!rule) throw new ValidationError('Recurring item not found.');
+      if (!dueDates(rule, dueDate, dueDate).length) throw new ValidationError('That date is not on this schedule.');
+      await sql.runAsync("INSERT OR IGNORE INTO recurring_occurrences (recurring_id, due_date, status) VALUES (?, ?, 'skipped')", recurringId, dueDate);
     });
   }
 

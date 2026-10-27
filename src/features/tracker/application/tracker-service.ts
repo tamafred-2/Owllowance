@@ -1,7 +1,8 @@
 import type {
-  ActivityItem, BudgetCommand, BudgetPeriod, CategoryCommand, CategoryType, EditEntryCommand, EntryCommand, LedgerRepository,
-  OpeningCommand, TransferCommand, WalletKind,
+  ActivityItem, BudgetCommand, BudgetPeriod, CategoryCommand, CategoryType, DueItem, EditEntryCommand, EntryCommand, LedgerRepository,
+  OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
 } from '../../../domain/ledger';
+import type { Frequency } from '../../../domain/recurring';
 import { addDays, assertLocalDate, eventTime, eventTimeOn } from '../../../domain/date';
 import { parseAmount, ValidationError } from '../../../domain/money';
 
@@ -63,6 +64,22 @@ export class TrackerService {
       startDate = input.startDate; endDate = addDays(input.endDate, 1);
     }
     return { id: input.id ?? this.uuid(), categoryId: input.categoryId, period: input.period, startDate, endDate, limitMinor: parseAmount(input.limit) };
+  }
+
+  prepareRecurring(input: { id?: string; name: string; type: CategoryType; amount: string; walletId: string; categoryId: string; frequency: Frequency; every: string; startDate: string }): RecurringCommand {
+    if (!input.walletId) throw new ValidationError('Choose a wallet.');
+    if (!input.categoryId) throw new ValidationError('Choose a category.');
+    const every = Number(input.every);
+    if (!/^\d{1,3}$/.test(input.every.trim())) throw new ValidationError(input.frequency === 'monthly' ? 'Enter a day of the month from 1 to 31.' : 'Enter how many days between payments.');
+    return { id: input.id ?? this.uuid(), name: input.name, type: input.type, amountMinor: parseAmount(input.amount), walletId: input.walletId,
+      categoryId: input.categoryId, frequency: input.frequency, every, startDate: input.startDate };
+  }
+
+  // Paying on or after the due date records it on the due date; paying early records it today.
+  preparePayment(item: DueItem): PayRecurringCommand {
+    const today = eventTime().localDate;
+    return { id: this.uuid(), recurringId: item.recurringId, dueDate: item.dueDate, walletId: item.walletId, categoryId: item.categoryId,
+      amountMinor: item.amountMinor, note: item.name, ...(item.dueDate < today ? eventTimeOn(item.dueDate) : eventTime()) };
   }
 
   private when(localDate?: string) {

@@ -10,6 +10,7 @@ import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
 import { usePullToRefresh } from './pull-to-refresh';
 import { useOpenSheet } from './sheet-context';
+import { PaymentsDue } from './payments-due';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
@@ -79,10 +80,7 @@ export function HomeScreen() {
           {!income && !expense ? <AppText size={12} tone="secondary">No income or expenses today.</AppText> : null}
         </View>
       </Surface>
-      <Surface style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}><AppText size={18} weight="600">Payments due</AppText><AppText size={12} tone="secondary">Coming soon</AppText></View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><AppIcon name="plan" size={28} color={colors.accent} /><AppText size={13} tone="secondary" style={{ flex: 1 }}>A place for upcoming bills and planned payments.</AppText></View>
-      </Surface>
+      <PaymentsDue />
     </View>}
   </ScrollView>
     {overview.wallet || overview.archivedWallets.length ? <FloatingStreak /> : null}

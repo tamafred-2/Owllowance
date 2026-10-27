@@ -280,3 +280,28 @@ test('entry forms open as a sheet over the current page and close back to it', a
   await expect(page.getByText('Wallet added.', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Manage Maya', exact: true })).toBeVisible();
 });
+
+test('recurring bill set up on Plan shows on Home and Paid records it once', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Add recurring', exact: true }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Internet');
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('150');
+  await page.getByRole('button', { name: 'Cash', exact: true }).click();
+  await page.getByRole('button', { name: 'Bills', exact: true }).click();
+  await page.getByRole('button', { name: 'Weekly', exact: true }).click(); // Defaults to today's weekday from today.
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByTestId('recurring-list')).toContainText('Internet');
+  await expect(page.getByTestId('recurring-list')).toContainText('Due today');
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  const due = page.getByTestId('payments-due');
+  await expect(due).toContainText('Internet');
+  await expect(due).toContainText('Due today');
+  await due.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('payments-due.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Paid', exact: true }).first().click();
+  await expect(page.getByText('Internet recorded.', { exact: true })).toBeVisible();
+  await expect(due).not.toContainText('Due today');
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('850.00');
+});

@@ -13,7 +13,7 @@ export async function seedFeeCategory(sql: SqlConnection): Promise<void> {
 }
 
 export const FEE_CATEGORY = '00000000-0000-4000-8000-000000000106';
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 // v4: transfers carry two entries, linked fee expenses, budgets and preferences.
 const ledgerSchema = `
 CREATE TABLE transactions (
@@ -51,6 +51,32 @@ const entrySignCheck = `SELECT CASE WHEN
     THEN RAISE(ABORT, 'invalid entry sign') END;`;
 const categoryCheck = `SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM categories WHERE id = NEW.category_id AND profile_id = NEW.profile_id AND type = NEW.type)
     THEN RAISE(ABORT, 'invalid category type') END;`;
+// v5: recurring bills/income and one row per handled occurrence (rule + due date), so nothing posts twice.
+const v5Objects = `
+CREATE TABLE recurring (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 60),
+  type TEXT NOT NULL CHECK (type IN ('expense','income')),
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor > 0 AND amount_minor <= ${MAX_MINOR}),
+  account_id TEXT NOT NULL,
+  category_id TEXT NOT NULL,
+  frequency TEXT NOT NULL CHECK (frequency IN ('monthly','weekly','days')),
+  every INTEGER NOT NULL CHECK (every BETWEEN 1 AND 366),
+  start_date TEXT NOT NULL CHECK (length(start_date) = 10),
+  paused INTEGER NOT NULL DEFAULT 0 CHECK (paused IN (0,1)),
+  FOREIGN KEY (account_id, profile_id) REFERENCES accounts(id, profile_id),
+  FOREIGN KEY (category_id, profile_id) REFERENCES categories(id, profile_id)
+);
+CREATE TABLE recurring_occurrences (
+  recurring_id TEXT NOT NULL REFERENCES recurring(id) ON DELETE CASCADE,
+  due_date TEXT NOT NULL CHECK (length(due_date) = 10),
+  status TEXT NOT NULL CHECK (status IN ('paid','skipped')),
+  transaction_id TEXT REFERENCES transactions(id) ON DELETE SET NULL,
+  PRIMARY KEY (recurring_id, due_date)
+);
+CREATE INDEX recurring_occurrences_transaction ON recurring_occurrences(transaction_id);
+`;
 const v4Objects = `
 CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN ${entrySignCheck} END;
 CREATE TRIGGER validate_entry_update BEFORE UPDATE ON entries BEGIN ${entrySignCheck} END;
@@ -208,6 +234,12 @@ export async function migrate(database: Database): Promise<void> {
       if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
       await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 4, new Date().toISOString());
       await sql.execAsync('PRAGMA user_version = 4');
+    }
+    if (version < 5) {
+      await sql.execAsync(v5Objects);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 5, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 5');
     }
   });
 }
