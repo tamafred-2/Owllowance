@@ -80,7 +80,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />
+          <Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />
           {editing ? <Button label="Duplicate" icon="duplicate" iconOnly variant="quiet" disabled={busy}
             onPress={() => router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
         </View>

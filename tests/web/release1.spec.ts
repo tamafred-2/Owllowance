@@ -30,7 +30,6 @@ test('transfer with fee moves money, appears once in history and can be deleted'
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
   await page.getByRole('radio', { name: 'From: Cash', exact: true }).click();
   await page.getByRole('radio', { name: 'To: Savings', exact: true }).click();
-  await page.getByRole('button', { name: 'Add fee, date or note', exact: true }).click();
   await page.getByLabel('Transfer fee (optional)', { exact: true }).fill('15');
   await expect(page.getByTestId('transfer-preview')).toContainText('-₱315.00');
   await page.screenshot({ path: testInfo.outputPath('transfer-form.png'), fullPage: true });
@@ -47,6 +46,26 @@ test('transfer with fee moves money, appears once in history and can be deleted'
   await expect(page.getByText('Cash → Savings', { exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,000.00');
+});
+
+test('transfer opened from a wallet shows that wallet as the fixed source', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('button', { name: 'Wallet options: Savings', exact: true }).click();
+  await page.getByRole('button', { name: 'Transfer', exact: true }).click();
+  await expect(page.getByTestId('transfer-source')).toContainText('Savings');
+  await expect(page.getByTestId('transfer-source')).toContainText('₱200.00');
+  await expect(page.getByRole('radio', { name: /^From:/ })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'To: Savings', exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Note (optional)', { exact: true })).toHaveCount(0);
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('50');
+  await page.getByRole('button', { name: 'Save transfer', exact: true }).click();
+  await expect(page.getByText('Choose both wallets.', { exact: true })).toBeVisible();
+  await page.getByRole('radio', { name: 'To: Cash', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('transfer-fixed-source.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Save transfer', exact: true }).click();
+  await expect(page.getByText('Transfer saved.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('150.00');
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,050.00');
 });
 
 test('edit, duplicate and delete an expense; history filters and search narrow results', async ({ page }) => {

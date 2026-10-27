@@ -81,10 +81,10 @@ export function useTransferForm(onSaved: (walletId: string) => void, initial: { 
   const { service, overview, refresh } = useTracker();
   const wallets = overview?.wallets ?? [];
   const [fromWalletId, setFromWalletId] = useState(initial.fromWalletId ?? wallets[0]?.id ?? '');
-  const [toWalletId, setToWalletId] = useState(initial.toWalletId ?? wallets.find(item => item.id !== (initial.fromWalletId ?? wallets[0]?.id))?.id ?? '');
+  // The destination is always an explicit choice.
+  const [toWalletId, setToWalletId] = useState(initial.toWalletId ?? '');
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState('');
-  const [note, setNote] = useState('');
   const [localDate, setLocalDate] = useState(eventTime().localDate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export function useTransferForm(onSaved: (walletId: string) => void, initial: { 
     if (!service || inFlight.current) return;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      const values = { fromWalletId, toWalletId, amount, fee, note, localDate };
+      const values = { fromWalletId, toWalletId, amount, fee, note: '', localDate };
       const fingerprint = JSON.stringify(values);
       if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, command: service.prepareTransfer(values) };
       await service.repository.addTransfer(pending.current.command);
@@ -104,5 +104,5 @@ export function useTransferForm(onSaved: (walletId: string) => void, initial: { 
     } catch (failure) { setError(saveError(failure)); }
     finally { inFlight.current = false; setBusy(false); }
   }
-  return { fromWalletId, setFromWalletId, toWalletId, setToWalletId, amount, setAmount, fee, setFee, note, setNote, localDate, setLocalDate, busy, error, submit };
+  return { fromWalletId, setFromWalletId, toWalletId, setToWalletId, amount, setAmount, fee, setFee, localDate, setLocalDate, busy, error, submit };
 }

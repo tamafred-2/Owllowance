@@ -89,7 +89,7 @@ export function CategoriesScreen() {
   };
   return <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Settings" icon="back" variant="quiet" onPress={() => router.replace({ pathname: '/settings', params: from ? { from } : {} })} /></View>
+      <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Settings" icon="back" iconOnly variant="quiet" onPress={() => router.replace({ pathname: '/settings', params: from ? { from } : {} })} /></View>
       <AppText accessibilityRole="header" size={28} weight="600">Categories</AppText>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Chip label="Expenses" selected={type === 'expense'} onPress={() => setType('expense')} />

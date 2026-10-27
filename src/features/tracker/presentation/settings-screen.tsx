@@ -64,7 +64,7 @@ export function SettingsScreen() {
   const disabled = Boolean(busy) || Boolean(storageError) || !settings;
   return <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button label="Back" icon="back" variant="quiet" onPress={() => router.replace(back)} /></View>
+      <View style={{ alignSelf: 'flex-start' }}><Button label="Back" icon="back" iconOnly variant="quiet" onPress={() => router.replace(back)} /></View>
       <AppText accessibilityRole="header" size={28} weight="600">Settings</AppText>
       {message ? <Feedback error={message.error}>{message.text}</Feedback> : null}
       <Surface style={{ gap: 14 }}>
