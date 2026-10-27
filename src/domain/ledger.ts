@@ -14,7 +14,7 @@ export type ActivityItem = EventTime & {
   amountMinor: number; walletId: string; walletName: string;
   categoryId: string | null; categoryName: string | null; iconKey: string | null; colorToken: string | null;
   // Transfers: the other wallet. Fee expenses: the transfer they belong to.
-  counterpartyName: string | null; linkedId: string | null;
+  counterpartyName: string | null; counterpartyId: string | null; linkedId: string | null;
   // Transfers: the linked fee charged to this row's wallet (source side only).
   feeMinor: number | null;
 };
@@ -84,6 +84,7 @@ export type TransferCommand = EventTime & {
   id: string; toEntryId: string; feeId: string;
   fromWalletId: string; toWalletId: string; amountMinor: number; feeMinor: number; note: string;
 };
+export type EditTransferCommand = TransferCommand & { revision: number };
 export type CategoryCommand = { id: string; type: CategoryType; name: string; iconKey: string; colorToken: string };
 export type BudgetCommand = {
   id: string; categoryId: string; period: BudgetPeriod; startDate: string | null; endDate: string | null; limitMinor: number;
@@ -100,6 +101,7 @@ export interface LedgerRepository {
   addExpense(command: EntryCommand): Promise<void>;
   addIncome(command: EntryCommand): Promise<void>;
   addTransfer(command: TransferCommand): Promise<void>;
+  updateTransfer(command: EditTransferCommand): Promise<void>;
   updateEntry(command: EditEntryCommand): Promise<void>;
   deleteTransaction(id: string, revision: number): Promise<void>;
   categories(): Promise<ManagedCategory[]>;

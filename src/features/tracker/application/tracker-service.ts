@@ -1,6 +1,6 @@
 import type {
   ActivityItem, BudgetCommand, BudgetPeriod, CategoryCommand, CategoryType, DueItem, EditEntryCommand, EntryCommand, LedgerRepository,
-  OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
+  EditTransferCommand, OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
 } from '../../../domain/ledger';
 import type { Frequency } from '../../../domain/recurring';
 import { addDays, assertLocalDate, eventTime, eventTimeOn } from '../../../domain/date';
@@ -48,6 +48,14 @@ export class TrackerService {
       id: this.uuid(), toEntryId: this.uuid(), feeId: this.uuid(), fromWalletId: input.fromWalletId, toWalletId: input.toWalletId,
       amountMinor, feeMinor, note, ...this.when(input.localDate),
     };
+  }
+
+  // An unchanged date keeps the transfer's original time context.
+  prepareTransferEdit(original: ActivityItem, input: { fromWalletId: string; toWalletId: string; amount: string; fee: string; note: string; localDate: string }): EditTransferCommand {
+    const command = this.prepareTransfer(input);
+    const time = input.localDate === original.localDate
+      ? { occurredAt: original.occurredAt, localDate: original.localDate, timeZone: original.timeZone, offsetMinutes: original.offsetMinutes } : {};
+    return { ...command, ...time, id: original.id, revision: original.revision };
   }
 
   prepareCategory(input: { id?: string; type: CategoryType; name: string; iconKey: string; colorToken: string }): CategoryCommand {

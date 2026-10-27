@@ -1,6 +1,6 @@
 import { validateWalletName } from '../domain/wallet-name';
 import type {
-  ActivityItem, Budget, BudgetCommand, CategoryCommand, DueItem, EditEntryCommand, EntryCommand, HistoryFilter, LedgerRepository,
+  ActivityItem, Budget, BudgetCommand, CategoryCommand, DueItem, EditEntryCommand, EditTransferCommand, EntryCommand, HistoryFilter, LedgerRepository,
   ManagedCategory, OpeningCommand, Overview, PayRecurringCommand, RecurringCommand, RecurringRule, Report, Settings, TransferCommand, Wallet,
 } from '../domain/ledger';
 import { defaultSettings, NET_WORTH } from '../domain/ledger';
@@ -32,6 +32,7 @@ const activitySelect = `SELECT t.id, t.type, t.occurred_at AS occurredAt,
   t.category_id AS categoryId, c.name AS categoryName, c.icon_key AS iconKey, c.color_token AS colorToken,
   CASE WHEN t.type = 'transfer' THEN (SELECT a2.name FROM entries e2 JOIN accounts a2 ON a2.id = e2.account_id
     WHERE e2.transaction_id = t.id AND e2.id <> e.id) END AS counterpartyName,
+  CASE WHEN t.type = 'transfer' THEN (SELECT e5.account_id FROM entries e5 WHERE e5.transaction_id = t.id AND e5.id <> e.id) END AS counterpartyId,
   CASE WHEN t.type = 'transfer' THEN (SELECT -SUM(e4.amount_minor) FROM transactions t4 JOIN entries e4 ON e4.transaction_id = t4.id
     WHERE t4.linked_id = t.id AND e4.account_id = e.account_id) END AS feeMinor
   FROM transactions t JOIN entries e ON e.transaction_id = t.id
@@ -337,6 +338,54 @@ export class SqlLedgerRepository implements LedgerRepository {
   private addEntry(command: EntryCommand, type: 'expense' | 'income'): Promise<void> {
     assertEntryCommand(command);
     return this.database.transaction(sql => postEntry(sql, command, type));
+  }
+
+  // Rewrites both sides of a transfer and its linked fee in one database transaction, revision-checked.
+  updateTransfer(command: EditTransferCommand): Promise<void> {
+    for (const id of [command.id, command.feeId, command.fromWalletId, command.toWalletId]) assertId(id);
+    assertEventTime(command); assertMinor(command.amountMinor); assertMinor(command.feeMinor); assertNote(command.note);
+    if (command.amountMinor <= 0) throw new ValidationError('Amount must be greater than zero.');
+    if (command.feeMinor < 0) throw new ValidationError('Fee cannot be negative.');
+    if (command.feeMinor > command.amountMinor) throw new ValidationError("The fee can't be more than the amount you send.");
+    if (command.fromWalletId === command.toWalletId) throw new ValidationError('Choose two different wallets.');
+    return this.database.transaction(async sql => {
+      const stored = await sql.getFirstAsync<Stored>('SELECT id, type, revision, linked_id, category_id FROM transactions WHERE id = ? AND profile_id = ?', command.id, PROFILE);
+      if (!stored) throw new ValidationError('This transfer no longer exists.');
+      if (stored.type !== 'transfer') throw new ValidationError('Only transfers can be edited here.');
+      if (stored.revision !== command.revision) throw new ValidationError('This transfer changed. Reopen it and try again.');
+      const entries = await sql.getAllAsync<{ id: string; account_id: string; amount_minor: number }>('SELECT id, account_id, amount_minor FROM entries WHERE transaction_id = ?', command.id);
+      const source = entries.find(entry => entry.amount_minor < 0), destination = entries.find(entry => entry.amount_minor > 0);
+      if (!source || !destination) throw new ValidationError('This transfer is damaged and cannot be edited.');
+      const fee = await sql.getFirstAsync<{ id: string; account_id: string; amount_minor: number }>(`SELECT t.id, e.account_id, e.amount_minor FROM transactions t
+        JOIN entries e ON e.transaction_id = t.id WHERE t.linked_id = ?`, command.id);
+      // New wallets must be active; the ones it already uses may stay even if archived.
+      for (const walletId of [command.fromWalletId, command.toWalletId]) {
+        if (walletId !== source.account_id && walletId !== destination.account_id && await activeBalance(sql, walletId) === null) throw new ValidationError('Choose available wallets.');
+      }
+      // Bounds: each affected wallet's balance after removing the old movement and applying the new one.
+      const delta = new Map<string, number>();
+      const add = (walletId: string, amount: number) => delta.set(walletId, (delta.get(walletId) ?? 0) + amount);
+      add(source.account_id, -source.amount_minor); add(destination.account_id, -destination.amount_minor);
+      if (fee) add(fee.account_id, -fee.amount_minor);
+      add(command.fromWalletId, -command.amountMinor - command.feeMinor); add(command.toWalletId, command.amountMinor);
+      for (const [walletId, change] of delta) addMinor(await walletBalance(sql, walletId), change);
+      addMinor(addMinor(await totalBalance(sql), fee ? -fee.amount_minor : 0), -command.feeMinor);
+      await sql.runAsync(`UPDATE transactions SET occurred_at = ?, local_date = ?, time_zone = ?, offset_minutes = ?, note = ?, revision = revision + 1
+        WHERE id = ? AND revision = ?`, command.occurredAt, command.localDate, command.timeZone, command.offsetMinutes, command.note, command.id, command.revision);
+      await sql.runAsync('UPDATE entries SET account_id = ?, amount_minor = ? WHERE id = ?', command.fromWalletId, -command.amountMinor, source.id);
+      await sql.runAsync('UPDATE entries SET account_id = ?, amount_minor = ? WHERE id = ?', command.toWalletId, command.amountMinor, destination.id);
+      if (fee && !command.feeMinor) {
+        await sql.runAsync('DELETE FROM entries WHERE transaction_id = ?', fee.id);
+        await sql.runAsync('DELETE FROM transactions WHERE id = ?', fee.id);
+      } else if (fee) {
+        await sql.runAsync(`UPDATE transactions SET occurred_at = ?, local_date = ?, time_zone = ?, offset_minutes = ?, revision = revision + 1 WHERE id = ?`,
+          command.occurredAt, command.localDate, command.timeZone, command.offsetMinutes, fee.id);
+        await sql.runAsync('UPDATE entries SET account_id = ?, amount_minor = ? WHERE transaction_id = ?', command.fromWalletId, -command.feeMinor, fee.id);
+      } else if (command.feeMinor) {
+        if (await sql.getFirstAsync('SELECT id FROM transactions WHERE id = ?', command.feeId)) throw new ValidationError('Invalid record identifier.');
+        await insertTransaction(sql, { ...command, id: command.feeId, walletId: command.fromWalletId, categoryId: FEE_CATEGORY, amountMinor: command.feeMinor, note: 'Transfer fee' }, 'expense', command.id);
+      }
+    });
   }
 
   addTransfer(command: TransferCommand): Promise<void> {

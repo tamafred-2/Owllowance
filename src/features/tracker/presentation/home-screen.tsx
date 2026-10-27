@@ -2,7 +2,7 @@ import { HeaderActions } from '../../../components/header-actions';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { AppText, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppText, Button, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon, type IconName } from '../../../design-system/icon';
 import { forestSummaryColors, useTheme } from '../../../design-system/theme';
 import { FloatingStreak } from '../../../components/floating-streak';
@@ -11,6 +11,7 @@ import { useTracker } from './tracker-context';
 import { usePullToRefresh } from './pull-to-refresh';
 import { useOpenSheet } from './sheet-context';
 import { PaymentsDue } from './payments-due';
+import { BudgetProgress } from './plan-screen';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
@@ -81,6 +82,17 @@ export function HomeScreen() {
         </View>
       </Surface>
       <PaymentsDue />
+      {overview.budgets.length ? <Surface style={{ gap: 0 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <AppText size={18} weight="600">Budgets</AppText>
+          <Button label="See all" variant="quiet" onPress={() => router.push('/plan')} />
+        </View>
+        <View testID="home-budgets">
+          {/* The three closest to (or over) their limit first. */}
+          {[...overview.budgets].sort((left, right) => right.spentMinor / right.limitMinor - left.spentMinor / left.limitMinor).slice(0, 3)
+            .map((budget, index) => <View key={budget.id} style={{ borderTopWidth: index ? 1 : 0, borderColor: colors.border }}><BudgetProgress budget={budget} /></View>)}
+        </View>
+      </Surface> : null}
     </View>}
   </ScrollView>
     {overview.wallet || overview.archivedWallets.length ? <FloatingStreak /> : null}

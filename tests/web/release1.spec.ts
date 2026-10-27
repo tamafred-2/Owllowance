@@ -47,6 +47,21 @@ test('transfer with fee moves money, appears once in history and can be deleted'
   await expect(page.getByText('Fees', { exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('history-transfer-fee.png') });
   await page.getByText('Cash → Savings', { exact: true }).click();
+  await page.getByRole('button', { name: 'Edit transfer', exact: true }).click();
+  const sheet = page.getByTestId('entry-sheet');
+  await expect(sheet.getByRole('heading', { name: 'Edit transfer', exact: true })).toBeVisible();
+  await expect(sheet.getByLabel('Amount (PHP)', { exact: true })).toHaveValue('300.00');
+  await expect(sheet.getByLabel('Transfer fee', { exact: true })).toHaveValue('15.00');
+  await sheet.getByLabel('Amount (PHP)', { exact: true }).fill('400');
+  await sheet.getByLabel('Transfer fee', { exact: true }).fill('');
+  await sheet.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText('Changes saved.', { exact: true })).toBeVisible();
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('600.00');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('600.00');
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await page.getByText('Cash → Savings', { exact: true }).click();
   await page.getByRole('button', { name: 'Delete transfer', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
   await expect(page.getByText('Cash → Savings', { exact: true })).toHaveCount(0);
@@ -133,6 +148,9 @@ test('budget progress, insights, custom category, hidden balances and theme pers
   await page.getByLabel('Limit (PHP)', { exact: true }).fill('100');
   await page.getByRole('button', { name: 'Save budget', exact: true }).click();
   await expect(page.getByTestId('budget-list')).toContainText('over');
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await expect(page.getByTestId('home-budgets')).toContainText('Coffee');
+  await page.getByRole('link', { name: 'Plan', exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath('plan-budget.png'), fullPage: true });
   await expect(page.getByText(/insights/i)).toHaveCount(0); // Insights opens only from Home.
   await page.getByRole('link', { name: 'Home', exact: true }).click();

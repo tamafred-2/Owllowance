@@ -77,15 +77,18 @@ export function useTransactionForm(onSaved: (walletId: string) => void, type: 'e
   return { walletId, setWalletId, wallet, amount, setAmount, categoryId, setCategoryId, note, setNote, localDate, setLocalDate, busy, error, submit };
 }
 
-export function useTransferForm(onSaved: (walletId: string) => void, initial: { fromWalletId?: string; toWalletId?: string }) {
+export type TransferDraft = { fromWalletId?: string; toWalletId?: string; amount?: string; fee?: string; localDate?: string; note?: string };
+
+// New transfers, or with `editing` a revision-checked edit of an existing one.
+export function useTransferForm(onSaved: (walletId: string) => void, initial: TransferDraft, editing?: ActivityItem) {
   const { service, overview, refresh } = useTracker();
   const wallets = overview?.wallets ?? [];
   const [fromWalletId, setFromWalletId] = useState(initial.fromWalletId ?? wallets[0]?.id ?? '');
   // The destination is always an explicit choice.
   const [toWalletId, setToWalletId] = useState(initial.toWalletId ?? '');
-  const [amount, setAmount] = useState('');
-  const [fee, setFee] = useState('');
-  const [localDate, setLocalDate] = useState(eventTime().localDate);
+  const [amount, setAmount] = useState(initial.amount ?? '');
+  const [fee, setFee] = useState(initial.fee ?? '');
+  const [localDate, setLocalDate] = useState(initial.localDate ?? eventTime().localDate);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -95,10 +98,13 @@ export function useTransferForm(onSaved: (walletId: string) => void, initial: { 
     if (!service || inFlight.current) return;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      const values = { fromWalletId, toWalletId, amount, fee, note: '', localDate };
-      const fingerprint = JSON.stringify(values);
-      if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, command: service.prepareTransfer(values) };
-      await service.repository.addTransfer(pending.current.command);
+      const values = { fromWalletId, toWalletId, amount, fee, note: initial.note ?? '', localDate };
+      if (editing) await service.repository.updateTransfer(service.prepareTransferEdit(editing, values));
+      else {
+        const fingerprint = JSON.stringify(values);
+        if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, command: service.prepareTransfer(values) };
+        await service.repository.addTransfer(pending.current.command);
+      }
       await refresh();
       onSaved(fromWalletId);
     } catch (failure) { setError(saveError(failure)); }

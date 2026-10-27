@@ -8,7 +8,7 @@ import { useTracker } from './tracker-context';
 import type { Origin } from './navigation';
 import { useOpenSheet } from './sheet-context';
 
-function TransferDetails({ transferId, onClose }: { transferId: string; onClose: () => void }) {
+function TransferDetails({ transferId, onClose, onEdit }: { transferId: string; onClose: () => void; onEdit: () => void }) {
   const { service, refresh, error: storageError } = useTracker();
   const [transfer, setTransfer] = useState<ActivityItem | null | undefined>(undefined);
   const [feeMinor, setFeeMinor] = useState(0);
@@ -45,7 +45,8 @@ function TransferDetails({ transferId, onClose }: { transferId: string; onClose:
         <AppText size={13} tone="secondary">{displayDate(transfer.localDate)}</AppText>
         {transfer.note ? <AppText size={13} tone="secondary">{transfer.note}</AppText> : null}
       </View>
-      <Button label="Delete transfer" icon="delete" variant="secondary" disabled={Boolean(storageError)} onPress={() => setConfirm(true)} />
+      <Button label="Edit transfer" icon="edit" variant="secondary" disabled={Boolean(storageError)} onPress={onEdit} />
+      <Button label="Delete transfer" icon="delete" variant="quiet" danger disabled={Boolean(storageError)} onPress={() => setConfirm(true)} />
       <Button label="Close" variant="quiet" onPress={onClose} />
     </>}
   </AppModal>;
@@ -60,6 +61,7 @@ export function useTransactionOpener(origin: Origin, walletId?: string) {
     if (item.type === 'opening') return;
     openSheet({ kind: 'entry', edit: item.id });
   };
-  const modal = transferId ? <TransferDetails transferId={transferId} onClose={() => setTransferId(null)} /> : null;
+  const modal = transferId ? <TransferDetails transferId={transferId} onClose={() => setTransferId(null)}
+    onEdit={() => { const id = transferId; setTransferId(null); openSheet({ kind: 'transfer', edit: id }); }} /> : null;
   return { open, modal };
 }

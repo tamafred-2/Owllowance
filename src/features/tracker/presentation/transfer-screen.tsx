@@ -1,16 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { AppText, Button, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { useTheme } from '../../../design-system/theme';
 import { eventTime } from '../../../domain/date';
 import { parseAmount } from '../../../domain/money';
-import { walletKindLabels, type Wallet } from '../../../domain/ledger';
+import { walletKindLabels, type ActivityItem, type Wallet } from '../../../domain/ledger';
 import { DateField } from '../../../components/date-field';
 import { WalletBadge } from '../../../components/wallet-card';
 import { walletLabel } from '../../../design-system/wallet-appearance';
 import { useTracker } from './tracker-context';
-import { useTransferForm } from './use-entry-forms';
+import { useTransferForm, type TransferDraft } from './use-entry-forms';
 import { leaveTo, originOf } from './navigation';
 import { useSheetFrame } from './sheet-context';
 import { SheetScrollView } from './sheet-scroll-view';
@@ -39,19 +40,46 @@ function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, bu
   </View>;
 }
 
+type Params = { from?: string; walletId?: string; edit?: string };
+type Editing = { item: ActivityItem; feeMinor: number };
+
 export function TransferScreen() {
+  const frame = useSheetFrame();
+  const routeParams = useLocalSearchParams<Params>();
+  const params: Params = frame ? frame.params : routeParams;
+  const { service } = useTracker();
+  const editId = params.edit;
+  const [editing, setEditing] = useState<Editing | null | undefined>(editId ? undefined : null);
+  useEffect(() => {
+    if (!editId || !service) return;
+    let live = true;
+    Promise.all([service.repository.transaction(editId), service.repository.history(0, 1, { linkedId: editId })]).then(
+      ([item, fee]) => { if (live) setEditing(item && item.type === 'transfer' ? { item, feeMinor: fee[0] ? Math.abs(fee[0].amountMinor) : 0 } : null); },
+      () => { if (live) setEditing(null); });
+    return () => { live = false; };
+  }, [editId, service]);
+  if (editId && editing === undefined) return null;
+  if (editId && !editing) return <View style={{ padding: 24, gap: 16 }}><AppText>This transfer is no longer available.</AppText>
+    <Button label="Close" variant="quiet" onPress={() => frame?.close()} /></View>;
+  return <TransferEditor params={params} editing={editing ?? undefined} />;
+}
+
+function TransferEditor({ params, editing }: { params: Params; editing?: Editing }) {
   const { colors } = useTheme();
   const frame = useSheetFrame();
-  const routeParams = useLocalSearchParams<{ from?: string; walletId?: string }>();
-  const params: { from?: string; walletId?: string } = frame ? frame.params : routeParams;
   const { overview, error } = useTracker();
   const origin = originOf(params.from, params.walletId);
   const originWalletId = params.walletId ?? '';
   const leave = (saved?: string) => frame ? frame.close(saved) : leaveTo(origin, originWalletId, saved);
-  const form = useTransferForm(() => leave('transfer'), { fromWalletId: originWalletId || undefined });
+  const draft: TransferDraft = editing ? {
+    fromWalletId: editing.item.walletId, toWalletId: editing.item.counterpartyId ?? undefined, amount: (Math.abs(editing.item.amountMinor) / 100).toFixed(2),
+    fee: editing.feeMinor ? (editing.feeMinor / 100).toFixed(2) : '', localDate: editing.item.localDate, note: editing.item.note,
+  } : { fromWalletId: originWalletId || undefined };
+  const form = useTransferForm(() => leave(editing ? 'updated' : 'transfer'), draft, editing?.item);
   if (!overview) return null;
-  const wallets = overview.wallets;
-  const all = [...wallets, ...overview.archivedWallets];
+  const all = [...overview.wallets, ...overview.archivedWallets];
+  // An edit may keep wallets that were archived since.
+  const wallets = editing ? all.filter(wallet => !wallet.archivedAt || wallet.id === editing.item.walletId || wallet.id === editing.item.counterpartyId) : overview.wallets;
   if (wallets.length < 2) return <View style={{ padding: 24, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' }}>
     <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
     <AppText tone="secondary">You need at least two active wallets to move money between them.</AppText>
@@ -61,7 +89,7 @@ export function TransferScreen() {
   const from = wallets.find(wallet => wallet.id === form.fromWalletId);
   const to = wallets.find(wallet => wallet.id === form.toWalletId);
   // Opened from a wallet: that wallet is the fixed source and only the destination is chosen.
-  const fixedSource = Boolean(originWalletId) && from?.id === originWalletId;
+  const fixedSource = !editing && Boolean(originWalletId) && from?.id === originWalletId;
   const amount = amountOrZero(form.amount), fee = amountOrZero(form.fee);
   const feeTooHigh = amount > 0 && fee > amount;
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -69,7 +97,7 @@ export function TransferScreen() {
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
         {frame ? null : <View style={{ alignSelf: 'flex-start' }}><Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
+          <AppText accessibilityRole="header" size={28} weight="600">{editing ? 'Edit transfer' : 'Transfer'}</AppText>
           <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={form.busy} />
         </View>
         <Surface style={{ gap: 24 }}>
@@ -93,7 +121,7 @@ export function TransferScreen() {
             {fee ? <AppText size={12} tone="secondary">Includes the fee.</AppText> : null}
           </View> : null}
           {form.error ? <Feedback error>{form.error}</Feedback> : null}
-          <Button label="Save transfer" icon="check" busy={form.busy} disabled={Boolean(error) || feeTooHigh} onPress={() => { void form.submit(); }} />
+          <Button label={editing ? 'Save changes' : 'Save transfer'} icon="check" busy={form.busy} disabled={Boolean(error) || feeTooHigh} onPress={() => { void form.submit(); }} />
         </Surface>
       </View>
     </SheetScrollView>

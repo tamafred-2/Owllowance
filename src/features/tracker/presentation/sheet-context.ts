@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 // Entry forms open as a sheet over the current page instead of replacing it.
 export type Sheet =
   | { kind: 'entry'; mode?: 'expense' | 'income'; walletId?: string; edit?: string; duplicate?: string }
-  | { kind: 'transfer'; walletId?: string }
+  | { kind: 'transfer'; walletId?: string; edit?: string }
   | { kind: 'wallet' };
 export type SheetFrame = { params: Record<string, string | undefined>; close: (saved?: string) => void; replace: (sheet: Sheet) => void };
 

@@ -84,6 +84,28 @@ test('deleting a transfer removes its fee; protected and stale deletes are refus
   assert.equal(f.connection.sqlite.prepare('SELECT COUNT(*) AS n FROM entries').get()?.n, 2);
 });
 
+test('editing a transfer moves both sides and adds, changes or removes its fee atomically', async t => {
+  const f = await twoWallets(); t.after(() => f.connection.sqlite.close());
+  const third = { ...opening(10_000), walletName: 'Bank', walletKind: 'bank' as const };
+  await f.repository.createWallet(third);
+  const original = f.transfer(20_000);
+  await f.repository.addTransfer(original);
+  const edit = { ...original, revision: 1, amountMinor: 30_000, feeMinor: 500, feeId: randomUUID(), toWalletId: third.walletId, note: 'Moved' };
+  await f.repository.updateTransfer(edit);
+  assert.deepEqual(await f.balances(), { Cash: 69_500, Savings: 50_000, Bank: 40_000 });
+  assert.equal((await f.repository.overview()).spentMinor, 500);
+  await assert.rejects(f.repository.updateTransfer(edit), /changed/); // Stale revision.
+  await f.repository.updateTransfer({ ...edit, revision: 2, feeMinor: 200 });
+  assert.deepEqual(await f.balances(), { Cash: 69_800, Savings: 50_000, Bank: 40_000 });
+  await f.repository.updateTransfer({ ...edit, revision: 3, feeMinor: 0, fromWalletId: f.savings.walletId, toWalletId: f.setup.walletId, amountMinor: 1_000 });
+  assert.deepEqual(await f.balances(), { Cash: 101_000, Savings: 49_000, Bank: 10_000 });
+  assert.equal((await f.repository.overview()).spentMinor, 0);
+  assert.throws(() => f.repository.updateTransfer({ ...edit, revision: 4, feeMinor: 40_000 }), /more than the amount/);
+  assert.throws(() => f.repository.updateTransfer({ ...edit, revision: 4, toWalletId: edit.fromWalletId }), /different wallets/);
+  const transfer = (await f.repository.history(0, 5, { type: 'transfer' }))[0];
+  assert.deepEqual([transfer.revision, transfer.note, transfer.feeMinor], [4, 'Moved', null]);
+});
+
 test('editing an entry updates wallet, amount, category and date atomically with revision checks', async t => {
   const f = await twoWallets(); t.after(() => f.connection.sqlite.close());
   const expense = f.expense(3_000);
@@ -271,7 +293,7 @@ test('corrupt or unsupported backups are rejected before live data changes', asy
 });
 
 test('CSV export quotes text and neutralizes spreadsheet formulas', () => {
-  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null };
+  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null, counterpartyId: null };
   const csv = transactionsCsv([
     { ...base, id: '1', type: 'expense', localDate: '2026-10-14', note: '=HYPERLINK("x")', amountMinor: -1205, walletName: 'Cash, main', categoryName: 'Food', counterpartyName: null },
     { ...base, id: '2', type: 'transfer', localDate: '2026-10-14', note: '', amountMinor: 5, walletName: '+Bank', categoryName: null, counterpartyName: 'Cash' },
