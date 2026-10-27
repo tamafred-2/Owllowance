@@ -93,5 +93,5 @@ const styles = StyleSheet.create({
   topbar: { paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, gap: 2 },
   bottomBar: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 28, marginHorizontal: 12, marginBottom: 8, paddingHorizontal: 6, paddingVertical: 8 },
   add: { minHeight: 48, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  mobileAdd: { width: 60, height: 60, justifyContent: 'center', alignItems: 'center', marginTop: -8 },
+  mobileAdd: { width: 72, height: 60, justifyContent: 'center', alignItems: 'center', marginTop: -12 },
 });
