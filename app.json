@@ -2,7 +2,7 @@
   "expo": {
     "name": "Owllowance",
     "slug": "owllowance",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "scheme": "owllowance",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -11,7 +11,7 @@
     "android": {
       "package": "com.owllowance.app",
       "predictiveBackGestureEnabled": true,
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",
