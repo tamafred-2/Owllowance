@@ -470,7 +470,7 @@ export class SqlLedgerRepository implements LedgerRepository {
         COALESCE(-SUM(CASE WHEN t.type = 'expense' THEN e.amount_minor END), 0) AS expense
         FROM transactions t JOIN entries e ON e.transaction_id = t.id WHERE t.local_date >= ? AND t.local_date < ?`, fromDate, toDateExclusive);
       const byCategory = await sql.getAllAsync<Report['byCategory'][number]>(`SELECT c.id AS categoryId, c.name, c.icon_key AS iconKey, c.color_token AS colorToken,
-        -SUM(e.amount_minor) AS amountMinor FROM transactions t JOIN entries e ON e.transaction_id = t.id JOIN categories c ON c.id = t.category_id
+        -SUM(e.amount_minor) AS amountMinor, COUNT(*) AS count FROM transactions t JOIN entries e ON e.transaction_id = t.id JOIN categories c ON c.id = t.category_id
         WHERE t.type = 'expense' AND t.local_date >= ? AND t.local_date < ? GROUP BY c.id ORDER BY amountMinor DESC, c.name`, fromDate, toDateExclusive);
       return { incomeMinor: assertMinor(sums?.income ?? 0), expenseMinor: assertMinor(sums?.expense ?? 0), byCategory };
     });

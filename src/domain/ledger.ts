@@ -57,7 +57,7 @@ export type Overview = {
 };
 export type Report = {
   incomeMinor: number; expenseMinor: number;
-  byCategory: { categoryId: string; name: string; iconKey: string; colorToken: string; amountMinor: number }[];
+  byCategory: { categoryId: string; name: string; iconKey: string; colorToken: string; amountMinor: number; count: number }[];
 };
 export type OpeningCommand = EventTime & {
   id: string; walletId: string; walletName: string; walletKind?: WalletKind; amountMinor: number;

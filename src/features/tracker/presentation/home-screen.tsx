@@ -8,6 +8,7 @@ import { forestSummaryColors, useTheme } from '../../../design-system/theme';
 import { FloatingStreak } from '../../../components/floating-streak';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
+import { usePullToRefresh } from './pull-to-refresh';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
@@ -22,13 +23,14 @@ export function HomeScreen() {
   const { width, fontScale } = useWindowDimensions();
   const { colors } = useTheme();
   const [sceneVisible, setSceneVisible] = useState(true);
+  const refreshControl = usePullToRefresh();
   if (!overview) return null;
   const income = overview.todayIncomeMinor;
   const expense = overview.todaySpentMinor;
   const net = income - expense;
   const scale = Math.max(income, expense, 1);
   const greeting = new Date().getHours() < 12 ? 'Good morning.' : new Date().getHours() < 18 ? 'Good afternoon.' : 'Good evening.';
-  return <View style={{ flex: 1 }}><ScrollView showsVerticalScrollIndicator={false} key={overview.wallet?.id ?? 'setup'} keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+  return <View style={{ flex: 1 }}><ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} key={overview.wallet?.id ?? 'setup'} keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
     onScroll={event => setSceneVisible(event.nativeEvent.contentOffset.y < 300)}
     contentContainerStyle={{ padding: width >= 900 ? 40 : 20, flexGrow: 1 }}>
     {!overview.wallet && !overview.archivedWallets.length ? <WalletSetup /> : <View style={{ maxWidth: 1050, width: '100%', alignSelf: 'center', gap: 24 }}>

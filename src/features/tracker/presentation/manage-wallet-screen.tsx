@@ -8,6 +8,7 @@ import type { Wallet } from '../../../domain/ledger';
 import { walletKindLabels } from '../../../domain/ledger';
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTracker } from './tracker-context';
+import { usePullToRefresh } from './pull-to-refresh';
 import { SavedFeedback } from './saved-feedback';
 import { BalanceEye, useBalanceHidden } from './balance-eye';
 
@@ -15,8 +16,9 @@ function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
   const { overview, error: storageError } = useTracker();
   const [renaming, setRenaming] = useState(false);
   const hidden = useBalanceHidden(wallet.id);
+  const refreshControl = usePullToRefresh();
   const disabled = Boolean(storageError);
-  return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
+  return <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button label="Back to Wallet" icon="back" iconOnly variant="quiet" onPress={() => router.replace('/accounts')} />

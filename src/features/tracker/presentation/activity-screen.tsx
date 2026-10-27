@@ -11,6 +11,7 @@ import { TransactionRow } from '../../../components/transaction-row';
 import { DateField } from '../../../components/date-field';
 import { saveTextFile } from '../../../platform/files';
 import { useTracker } from './tracker-context';
+import { usePullToRefresh } from './pull-to-refresh';
 import { useTransactionOpener } from './transaction-opener';
 import { SavedFeedback } from './saved-feedback';
 
@@ -25,25 +26,31 @@ function periodRange(period: Period, from: string, to: string): Pick<HistoryFilt
   return {};
 }
 
+// Insights opens History pre-filtered (category + month); a fresh key resets filters when that changes.
 export function ActivityScreen() {
+  const { saved, categoryId, month } = useLocalSearchParams<{ saved?: string; categoryId?: string; month?: string }>();
+  return <ActivityList key={`${categoryId ?? ''}|${month ?? ''}`} saved={saved} initialCategory={categoryId} initialMonth={month} />;
+}
+
+function ActivityList({ saved, initialCategory, initialMonth }: { saved?: string; initialCategory?: string; initialMonth?: string }) {
   const { service, overview } = useTracker();
-  const { saved } = useLocalSearchParams<{ saved?: string }>();
   const { colors } = useTheme();
   const opener = useTransactionOpener('history');
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(Boolean(initialCategory));
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
-  const [type, setType] = useState<HistoryFilter['type']>();
+  const [type, setType] = useState<HistoryFilter['type']>(initialCategory ? 'expense' : undefined);
   const [walletId, setWalletId] = useState<string>();
-  const [categoryId, setCategoryId] = useState<string>();
-  const [period, setPeriod] = useState<Period>('all');
+  const [categoryId, setCategoryId] = useState<string | undefined>(initialCategory);
   const today = eventTime().localDate;
-  const [from, setFrom] = useState(monthStart(today));
-  const [to, setTo] = useState(today);
+  const month = initialMonth && /^\d{4}-\d{2}-01$/.test(initialMonth) ? initialMonth : undefined;
+  const [period, setPeriod] = useState<Period>(month ? 'custom' : 'all');
+  const [from, setFrom] = useState(month ?? monthStart(today));
+  const [to, setTo] = useState(month ? [addDays(nextMonthStart(month), -1), today].sort()[0] : today);
   const [exporting, setExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<{ text: string; error: boolean } | null>(null);
   const generation = useRef(0);
@@ -73,6 +80,8 @@ export function ActivityScreen() {
 
   const cancel = useCallback(() => { generation.current++; inFlight.current = false; }, []);
   useEffect(() => { void load(true); return cancel; }, [load, overview, cancel]);
+  const reload = useCallback(() => load(true), [load]);
+  const refreshControl = usePullToRefresh(reload);
 
   async function exportCsv() {
     if (!service || exporting) return;
@@ -135,7 +144,7 @@ export function ActivityScreen() {
 
   return <View style={{ flex: 1, width: '100%', maxWidth: 1100, alignSelf: 'center', paddingHorizontal: 24 }}>
     <View style={{ paddingTop: 28, paddingBottom: 12, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><AppText accessibilityRole="header" size={28} weight="700" style={{ flexShrink: 1 }}>History</AppText><HeaderActions /></View><AppText tone="secondary">The story behind your balance.</AppText></View>
-    <FlatList showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} data={items} keyExtractor={item => `${item.id}-${item.walletId}`}
+    <FlatList refreshControl={refreshControl} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} data={items} keyExtractor={item => `${item.id}-${item.walletId}`}
       renderItem={({ item }) => <TransactionRow item={item} walletHistory={Boolean(walletId)} onPress={opener.open} />}
       ListHeaderComponent={header} keyboardShouldPersistTaps="handled"
       contentContainerStyle={{ paddingBottom: 24 }} initialNumToRender={15}

@@ -12,6 +12,7 @@ import { WalletCard } from '../../../components/wallet-card';
 import { WalletDeck, WalletRow } from '../../../components/wallet-views';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
+import { usePullToRefresh } from './pull-to-refresh';
 import { SavedFeedback } from './saved-feedback';
 import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
@@ -46,6 +47,7 @@ export function AccountsScreen() {
   const compact = width >= 370 && fontScale <= 1.15 && ![...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])].some(wallet => Math.abs(wallet.balanceMinor) >= 1000000000);
   const [sceneVisible, setSceneVisible] = useState(true);
   const [deckDragging, setDeckDragging] = useState(false);
+  const refreshControl = usePullToRefresh();
   const rememberDeckWallet = useCallback((walletId: string) => {
     lastDeckWallet = walletId;
     void service?.repository.saveSettings({ deckWallet: walletId }).catch(() => undefined);
@@ -60,7 +62,7 @@ export function AccountsScreen() {
     balanceToggle: (wallet: Wallet, color: string, size = 18) => <BalanceEye target={wallet.id} color={color} size={size} />,
   };
   if (!overview.wallet && !overview.archivedWallets.length) return <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}><WalletSetup /></ScrollView>;
-  return <ScrollView scrollEnabled={!deckDragging} showsVerticalScrollIndicator={false} onScroll={event => setSceneVisible(event.nativeEvent.contentOffset.y < 300)} scrollEventThrottle={100}
+  return <ScrollView refreshControl={refreshControl} scrollEnabled={!deckDragging} showsVerticalScrollIndicator={false} onScroll={event => setSceneVisible(event.nativeEvent.contentOffset.y < 300)} scrollEventThrottle={100}
     contentContainerStyle={{ padding: width >= 900 ? 40 : 20 }}>
     <View style={{ maxWidth: 1050, width: '100%', alignSelf: 'center', gap: 24 }}>
       <View style={{ gap: 16 }}>

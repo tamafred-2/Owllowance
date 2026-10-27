@@ -47,6 +47,7 @@ test('transfer moves money atomically, records fee as linked expense and exclude
   assert.equal(cashHistory.length, 2); // Opening + transfer; the fee is folded in.
   const report = await f.repository.report(time.localDate, addDays(time.localDate, 1));
   assert.deepEqual([report.incomeMinor, report.expenseMinor], [0, 1_500]);
+  assert.deepEqual(report.byCategory.map(item => [item.name, item.amountMinor, item.count]), [['Fees', 1_500, 1]]);
   await assert.rejects(f.repository.addTransfer({ ...command, amountMinor: 20_001 }), /different transaction/);
 });
 

@@ -137,7 +137,16 @@ test('budget progress, insights, custom category, hidden balances and theme pers
   await page.getByRole('link', { name: 'Home', exact: true }).click();
   await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await expect(page.getByText('Spending by category', { exact: true })).toBeVisible();
-  await expect(page.getByText('Coffee', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('category-breakdown')).toContainText('1 transaction · 100%');
+  await expect(page.getByTestId('category-breakdown')).toContainText('New this month');
+  await page.screenshot({ path: testInfo.outputPath('insights-categories.png'), fullPage: true });
+  await page.getByRole('button', { name: /^Coffee: .*Show transactions$/ }).click();
+  await expect(page.getByRole('heading', { name: 'History', exact: true })).toBeVisible();
+  await expect(page.getByTestId('history-filters')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Coffee', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Opening balance', { exact: true })).toHaveCount(0);
+  await page.goBack();
+  await expect(page.getByText('Spending by category', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to Home', exact: true }).click();
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page.getByText('Reduce motion', { exact: true })).toHaveCount(0);

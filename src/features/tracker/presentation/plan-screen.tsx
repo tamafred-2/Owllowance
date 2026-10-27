@@ -10,6 +10,7 @@ import type { Budget, BudgetPeriod } from '../../../domain/ledger';
 import { addDays, displayDate, eventTime } from '../../../domain/date';
 import { ValidationError } from '../../../domain/money';
 import { useTracker } from './tracker-context';
+import { usePullToRefresh } from './pull-to-refresh';
 
 const periodLabels: Record<BudgetPeriod, string> = { monthly: 'Monthly', weekly: 'Weekly', custom: 'Custom dates' };
 
@@ -95,9 +96,10 @@ export function PlanScreen() {
   const { overview, error } = useTracker();
   const { colors } = useTheme();
   const [editing, setEditing] = useState<Budget | 'new' | null>(null);
+  const refreshControl = usePullToRefresh();
   const budgets = overview?.budgets ?? [];
   const canAdd = Boolean(overview?.categories.length) && !error && budgets.length < (overview?.categories.length ?? 0);
-  return <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: width >= 900 ? 40 : 20 }}>
+  return <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: width >= 900 ? 40 : 20 }}>
     <View style={{ width: '100%', maxWidth: 1050, alignSelf: 'center', gap: 24 }}>
       <View style={{ gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><AppText accessibilityRole="header" size={28} weight="700" style={{ flexShrink: 1 }}>Plan</AppText><HeaderActions /></View>
