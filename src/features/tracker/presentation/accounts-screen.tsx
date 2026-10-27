@@ -1,7 +1,7 @@
 import { AnchoredMenu, type MenuAnchor } from '../../../components/anchored-menu';
 import { AppModal } from '../../../components/app-modal';
 import { HeaderActions } from '../../../components/header-actions';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppText, Button, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
@@ -18,6 +18,7 @@ import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
 import { RenameWalletModal } from './rename-wallet-modal';
 import { BalanceEye } from './balance-eye';
+import { useOpenSheet } from './sheet-context';
 
 // The card left in front survives leaving the screen (memory) and restarts (settings).
 let lastDeckWallet: string | null = null;
@@ -49,6 +50,7 @@ export function AccountsScreen() {
   const [deckDragging, setDeckDragging] = useState(false);
   // Off while a finger is on the card deck, so dragging a card down never starts a refresh.
   const refreshControl = usePullToRefresh(undefined, !deckDragging);
+  const openSheet = useOpenSheet();
   const rememberDeckWallet = useCallback((walletId: string) => {
     lastDeckWallet = walletId;
     void service?.repository.saveSettings({ deckWallet: walletId }).catch(() => undefined);
@@ -92,9 +94,9 @@ export function AccountsScreen() {
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <AppText size={20} weight="600">Your wallets</AppText>
-        <Link href="/wallet-new" asChild><Pressable accessibilityRole="link" accessibilityLabel="Add wallet" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Add wallet" onPress={() => openSheet({ kind: 'wallet' })} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8 }}>
           <AppText size={14} weight="600" style={{ color: colors.accent }}>Add wallet</AppText>
-        </Pressable></Link>
+        </Pressable>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: -8 }}>
       <AppText testID="wallet-view-label" size={13} weight="600" tone="secondary">{{ list: 'List view', grid: 'Grid view', cards: 'Card view' }[view]}</AppText>
@@ -128,8 +130,8 @@ export function AccountsScreen() {
         </View> : <View>{overview.archivedWallets.map(wallet => <WalletRow key={wallet.id} wallet={wallet} {...viewProps} />)}</View>}
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>
-        {!menuWallet.archivedAt ? <Button label="Add money" icon="income" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/expense', params: { mode: 'income', walletId: id, from: 'wallet' } }); }} /> : null}
-        {!menuWallet.archivedAt && overview.wallets.length > 1 ? <Button label="Transfer" icon="transfer" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/transfer', params: { walletId: id, from: 'wallet' } }); }} /> : null}
+        {!menuWallet.archivedAt ? <Button label="Add money" icon="income" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'entry', mode: 'income', walletId: id }); }} /> : null}
+        {!menuWallet.archivedAt && overview.wallets.length > 1 ? <Button label="Transfer" icon="transfer" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'transfer', walletId: id }); }} /> : null}
         <Button label="Edit name" icon="edit" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
         <Button label="View history" icon="activity" variant="quiet" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
         <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" danger={!menuWallet.archivedAt} disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />

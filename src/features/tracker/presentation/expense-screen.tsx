@@ -13,12 +13,15 @@ import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTransactionForm, type EntryDraft } from './use-entry-forms';
 import { leaveTo, originOf, type Origin } from './navigation';
+import { useSheetFrame } from './sheet-context';
 
 type Params = { mode?: string; walletId?: string; from?: string; edit?: string; duplicate?: string };
 
 // Loads the source transaction for edit/duplicate before mounting the form with its values.
 export function ExpenseScreen() {
-  const params = useLocalSearchParams<Params>();
+  const frame = useSheetFrame();
+  const routeParams = useLocalSearchParams<Params>();
+  const params: Params = frame ? frame.params : routeParams;
   const { service, overview } = useTracker();
   const sourceId = params.edit || params.duplicate || '';
   const [source, setSource] = useState<ActivityItem | null | undefined>(sourceId ? undefined : null);
@@ -47,7 +50,8 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
   const { service, overview, refresh, error } = useTracker();
   const { colors, isDark } = useTheme();
   const [mode, setMode] = useState(initialMode);
-  const leave = (walletId: string, saved?: string) => leaveTo(origin, origin === 'manage' ? walletId || originWalletId : originWalletId, saved);
+  const frame = useSheetFrame();
+  const leave = (walletId: string, saved?: string) => frame ? frame.close(saved) : leaveTo(origin, origin === 'manage' ? walletId || originWalletId : originWalletId, saved);
   const expenseForm = useTransactionForm(walletId => leave(walletId, editing ? 'updated' : 'expense'), 'expense', draft, editing?.type === 'expense' ? editing : undefined);
   const incomeForm = useTransactionForm(walletId => leave(walletId, editing ? 'updated' : 'income'), 'income', draft, editing?.type === 'income' ? editing : undefined);
   const form = mode === 'expense' ? expenseForm : incomeForm;
@@ -80,9 +84,9 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />
+          <Button label={frame ? 'Close' : origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />
           {editing ? <Button label="Duplicate" icon="duplicate" iconOnly variant="quiet" disabled={busy}
-            onPress={() => router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
+            onPress={() => frame ? frame.replace({ kind: 'entry', duplicate: editing.id }) : router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}><View style={{ padding: 8, borderRadius: 12, backgroundColor: colors.muted }}><AppIcon name={mode} size={18} color={colors.accent} /></View><AppText accessibilityRole="header" size={22} weight="600" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>{heading}</AppText></View>

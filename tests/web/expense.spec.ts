@@ -23,7 +23,6 @@ test('expense entry persists across reload, offline reopening and responsive the
   await expectBalance(page, '₱1,000.00');
   await expect(page.getByText('₱0.00', { exact: true })).toHaveCount(3);
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByRole('textbox', { name: 'Amount (PHP)', exact: true }).fill('0.001');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('button', { name: 'Save expense', exact: true }).click();
@@ -47,7 +46,6 @@ test('expense entry persists across reload, offline reopening and responsive the
   await page.reload();
   await expect(page.getByText('Synthetic lunch', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByRole('textbox', { name: 'Amount (PHP)', exact: true }).fill('0.01');
   await page.getByRole('radio', { name: 'Other', exact: true }).click();
   await page.getByRole('button', { name: 'Save expense', exact: true }).click();
@@ -59,7 +57,6 @@ test('expense entry persists across reload, offline reopening and responsive the
   await page.screenshot({ path: testInfo.outputPath('home-mobile-dark.png'), fullPage: true });
   await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 390);
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath('expense-mobile-dark.png'), fullPage: true });
   await expect(page.getByRole('textbox', { name: 'Amount (PHP)', exact: true })).toBeVisible();
   expect(uncaught).toEqual([]);
@@ -129,7 +126,6 @@ test('a mid-save storage failure preserves input and retry posts one expense', a
   await page.getByRole('textbox', { name: 'Opening balance (PHP)', exact: true }).fill('100');
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByRole('textbox', { name: 'Amount (PHP)', exact: true }).fill('25.50');
   await page.getByRole('radio', { name: 'Transport', exact: true }).click();
   await page.getByRole('button', { name: 'Add a note', exact: true }).click();

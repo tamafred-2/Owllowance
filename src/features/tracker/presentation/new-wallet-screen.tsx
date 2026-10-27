@@ -7,14 +7,17 @@ import { useWalletSetup } from './use-entry-forms';
 import { nextWalletName, walletPresets } from '../../../design-system/wallet-appearance';
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTracker } from './tracker-context';
+import { useSheetFrame } from './sheet-context';
 
 export function NewWalletScreen() {
-  const form = useWalletSetup(() => router.replace('/accounts'));
+  const frame = useSheetFrame();
+  const leave = (saved?: string) => frame ? frame.close(saved) : router.replace('/accounts');
+  const form = useWalletSetup(() => leave('wallet'));
   const { colors } = useTheme();
   const { error, overview } = useTracker();
   return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Wallet" icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => router.replace('/accounts')} /></View>
+      <View style={{ alignSelf: 'flex-start' }}><Button label={frame ? 'Close' : 'Back to Wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>
       <AppText accessibilityRole="header" size={28} weight="600">Add a wallet</AppText>
       <Surface style={{ gap: 20 }}>
         <View style={{ gap: 8 }}><AppText size={14}>1. Wallet type</AppText><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

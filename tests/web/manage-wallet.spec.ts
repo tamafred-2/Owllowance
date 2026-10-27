@@ -7,7 +7,7 @@ test('Manage wallet keeps rename optional and adds income to the chosen wallet',
   await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('100');
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
-  await page.getByRole('link', { name: 'Add wallet', exact: true }).click();
+  await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('Savings');
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await page.getByRole('link', { name: 'Manage Savings', exact: true }).click();

@@ -46,7 +46,6 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await page.getByText('Payments due', { exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('home-today-light.png'), fullPage: true });
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByRole('tab', { name: 'Income', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('200');
   await page.getByRole('radio', { name: 'Allowance', exact: true }).click();
@@ -54,7 +53,6 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await expect(page.getByTestId('today-net')).toContainText('₱200.00');
   await expect(page.getByText('Net increase today', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('button', { name: 'Save expense', exact: true }).click();

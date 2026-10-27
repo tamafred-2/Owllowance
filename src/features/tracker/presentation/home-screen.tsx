@@ -9,11 +9,12 @@ import { FloatingStreak } from '../../../components/floating-streak';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
 import { usePullToRefresh } from './pull-to-refresh';
+import { useOpenSheet } from './sheet-context';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
 const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports' }[] = [
-  { label: 'Transfer', icon: 'transfer', href: '/transfer' }, { label: 'Budgets', icon: 'budgets', href: '/plan' },
+  { label: 'Transfer', icon: 'transfer', href: '/transfer' /* opens as a sheet */ }, { label: 'Budgets', icon: 'budgets', href: '/plan' },
   { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals' }, { label: 'Debt', icon: 'debt' },
 ];
 
@@ -24,6 +25,7 @@ export function HomeScreen() {
   const { colors } = useTheme();
   const [sceneVisible, setSceneVisible] = useState(true);
   const refreshControl = usePullToRefresh();
+  const openSheet = useOpenSheet();
   if (!overview) return null;
   const income = overview.todayIncomeMinor;
   const expense = overview.todaySpentMinor;
@@ -53,7 +55,7 @@ export function HomeScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {quickActions.map(action => <Pressable key={action.label} disabled={!action.href} accessibilityRole={action.href ? 'link' : 'button'}
             accessibilityLabel={action.href ? action.label : `${action.label}, coming soon`} accessibilityState={{ disabled: !action.href }}
-            onPress={() => { if (action.href) router.push(action.href); }}
+            onPress={() => { if (action.href === '/transfer') openSheet({ kind: 'transfer' }); else if (action.href) router.push(action.href); }}
             style={({ pressed }) => ({ flex: 1, minWidth: fontScale > 1.2 ? 90 : 54, alignItems: 'center', gap: 8, paddingVertical: 8, opacity: !action.href ? 0.55 : pressed ? 0.7 : 1 })}>
             <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}><AppIcon name={action.icon} color={colors.accent} /></View>
             <AppText size={11} tone="secondary">{action.label}</AppText>

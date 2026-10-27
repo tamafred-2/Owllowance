@@ -12,6 +12,7 @@ import { walletLabel } from '../../../design-system/wallet-appearance';
 import { useTracker } from './tracker-context';
 import { useTransferForm } from './use-entry-forms';
 import { leaveTo, originOf } from './navigation';
+import { useSheetFrame } from './sheet-context';
 
 function amountOrZero(input: string): number {
   try { return input.trim() ? parseAmount(input, true) : 0; } catch { return 0; }
@@ -39,19 +40,22 @@ function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, bu
 
 export function TransferScreen() {
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ from?: string; walletId?: string }>();
+  const frame = useSheetFrame();
+  const routeParams = useLocalSearchParams<{ from?: string; walletId?: string }>();
+  const params: { from?: string; walletId?: string } = frame ? frame.params : routeParams;
   const { overview, error } = useTracker();
   const origin = originOf(params.from, params.walletId);
   const originWalletId = params.walletId ?? '';
-  const form = useTransferForm(() => leaveTo(origin, originWalletId, 'transfer'), { fromWalletId: originWalletId || undefined });
+  const leave = (saved?: string) => frame ? frame.close(saved) : leaveTo(origin, originWalletId, saved);
+  const form = useTransferForm(() => leave('transfer'), { fromWalletId: originWalletId || undefined });
   if (!overview) return null;
   const wallets = overview.wallets;
   const all = [...wallets, ...overview.archivedWallets];
   if (wallets.length < 2) return <View style={{ padding: 24, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' }}>
     <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
     <AppText tone="secondary">You need at least two active wallets to move money between them.</AppText>
-    <Button label="Add wallet" onPress={() => router.replace('/wallet-new')} />
-    <Button label="Go back" variant="quiet" onPress={() => leaveTo(origin, originWalletId)} />
+    <Button label="Add wallet" onPress={() => frame ? frame.replace({ kind: 'wallet' }) : router.replace('/wallet-new')} />
+    <Button label="Go back" variant="quiet" onPress={() => leave()} />
   </View>;
   const from = wallets.find(wallet => wallet.id === form.fromWalletId);
   const to = wallets.find(wallet => wallet.id === form.toWalletId);
@@ -62,7 +66,7 @@ export function TransferScreen() {
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
-        <View style={{ alignSelf: 'flex-start' }}><Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leaveTo(origin, originWalletId)} /></View>
+        <View style={{ alignSelf: 'flex-start' }}><Button label={frame ? 'Close' : origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
           <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={form.busy} />

@@ -1,5 +1,5 @@
 import { Link, Slot, usePathname } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText, Button, Feedback } from '../design-system/primitives';
@@ -8,8 +8,8 @@ import { useTheme } from '../design-system/theme';
 import { useTracker } from '../features/tracker/presentation/tracker-context';
 import { OpeningScreen } from './opening-screen';
 import { OwlAddShape } from './owl-add-shape';
-import { AddMenu } from './add-menu';
-import type { MenuAnchor } from './anchored-menu';
+import { SheetHost } from '../features/tracker/presentation/entry-sheet';
+import { useOpenSheet } from '../features/tracker/presentation/sheet-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { finishNativeLoading, hasNativeLoading } from '../platform/native-loading';
 
@@ -33,6 +33,17 @@ function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activit
   </Link>;
 }
 
+// The main Add action opens a new expense as a sheet over the current page.
+function AddExpenseButton({ wide = false }: { wide?: boolean }) {
+  const open = useOpenSheet();
+  const { colors } = useTheme();
+  const onPress = () => open({ kind: 'entry', mode: 'expense' });
+  if (wide) return <Pressable accessibilityRole="button" accessibilityLabel="Add transaction" onPress={onPress} style={StyleSheet.flatten([styles.add, { backgroundColor: colors.accent }])}>
+    <AppText size={14} weight="600" style={{ color: colors.onAccent }}>Add transaction</AppText>
+  </Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel="Add transaction" onPress={onPress} style={styles.mobileAdd}><OwlAddShape /></Pressable>;
+}
+
 export function AppShell() {
   const path = usePathname();
   // Forms and sub-pages hide the main navigation and Add action.
@@ -49,13 +60,10 @@ export function AppShell() {
   const { overview, loading, error, refresh } = useTracker();
   const [introComplete, setIntroComplete] = useState(hasNativeLoading);
   const canAdd = Boolean(overview?.wallet) && !error && !formRoute;
-  const mobileAdd = useRef<View>(null);
-  const sidebarAdd = useRef<View>(null);
-  const [addAnchor, setAddAnchor] = useState<MenuAnchor | null>(null);
-  const openAdd = (node: View | null) => node?.measureInWindow((x, y, w, h) => setAddAnchor({ x, y, width: w, height: h }));
   if (!error && (!introComplete || (loading && !overview))) return <OpeningScreen onIntroComplete={() => setIntroComplete(true)} />;
   return <KeyboardAvoidingView onLayout={() => { finishNativeLoading(); void SplashScreen.hideAsync().catch(() => {}); }} style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'android' ? 'height' : undefined}>
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right', 'bottom']}>
+    <SheetHost>
     <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }}>
       {wide ? <View style={[styles.sidebar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ padding: 14, gap: 4, marginBottom: 36 }}>
@@ -66,10 +74,7 @@ export function AppShell() {
         <NavItem href="/accounts" label="Wallet" icon="wallet" />
         <NavItem href="/plan" label="Plan" icon="plan" compact={!wide} />
         <NavItem href="/activity" label="History" icon="activity" />
-        {canAdd ? <View style={{ marginTop: 24 }}><Pressable ref={sidebarAdd} accessibilityRole="button" accessibilityLabel="Add transaction" onPress={() => openAdd(sidebarAdd.current)}
-          style={StyleSheet.flatten([styles.add, { backgroundColor: colors.accent }])}>
-          <AppText size={14} weight="600" style={{ color: colors.onAccent }}>Add transaction</AppText>
-        </Pressable></View> : null}
+        {canAdd ? <View style={{ marginTop: 24 }}><AddExpenseButton wide /></View> : null}
         <View style={{ flex: 1 }} />
       </View> : (overview?.wallet || overview?.archivedWallets.length) ? null : <View style={[styles.topbar, { borderColor: colors.border, backgroundColor: colors.surface }]}>
         <AppText size={20} weight="700">Owllowance</AppText>
@@ -85,15 +90,13 @@ export function AppShell() {
         <NavItem href="/" label="Home" icon="home" compact />
         <NavItem href="/accounts" label="Wallet" icon="wallet" compact />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          {canAdd ? <Pressable ref={mobileAdd} accessibilityRole="button" accessibilityLabel="Add transaction" onPress={() => openAdd(mobileAdd.current)} style={styles.mobileAdd}>
-            <OwlAddShape />
-          </Pressable> : null}
+          {canAdd ? <AddExpenseButton /> : null}
         </View>
         <NavItem href="/plan" label="Plan" icon="plan" compact={!wide} />
         <NavItem href="/activity" label="History" icon="activity" compact />
       </View> : null}
     </View>
-    {addAnchor ? <AddMenu anchor={addAnchor} onClose={() => setAddAnchor(null)} /> : null}
+    </SheetHost>
     </SafeAreaView>
   </KeyboardAvoidingView>;
 }

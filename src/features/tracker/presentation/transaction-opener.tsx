@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { AppModal } from '../../../components/app-modal';
@@ -7,6 +6,7 @@ import type { ActivityItem } from '../../../domain/ledger';
 import { displayDate } from '../../../domain/date';
 import { useTracker } from './tracker-context';
 import type { Origin } from './navigation';
+import { useOpenSheet } from './sheet-context';
 
 function TransferDetails({ transferId, onClose }: { transferId: string; onClose: () => void }) {
   const { service, refresh, error: storageError } = useTracker();
@@ -54,10 +54,11 @@ function TransferDetails({ transferId, onClose }: { transferId: string; onClose:
 // Income/expense rows open the edit screen; transfers and their fees open the transfer details.
 export function useTransactionOpener(origin: Origin, walletId?: string) {
   const [transferId, setTransferId] = useState<string | null>(null);
+  const openSheet = useOpenSheet();
   const open = (item: ActivityItem) => {
     if (item.type === 'transfer' || item.linkedId) { setTransferId(item.linkedId ?? item.id); return; }
     if (item.type === 'opening') return;
-    router.push({ pathname: '/expense', params: { edit: item.id, from: origin, ...(walletId ? { walletId } : {}) } });
+    openSheet({ kind: 'entry', edit: item.id });
   };
   const modal = transferId ? <TransferDetails transferId={transferId} onClose={() => setTransferId(null)} /> : null;
   return { open, modal };

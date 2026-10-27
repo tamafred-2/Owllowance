@@ -9,7 +9,7 @@ test('Accounts creates wallets, selects expense account and preserves totals aft
   await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await expect(page.getByTestId('forest-scene')).toBeVisible();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
-  await page.getByRole('link', { name: 'Add wallet', exact: true }).click();
+  await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('Test bank');
   await page.getByRole('radio', { name: 'Bank', exact: true }).click();
   await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('200');
@@ -17,12 +17,13 @@ test('Accounts creates wallets, selects expense account and preserves totals aft
   await expect(page.getByText('Test bank', { exact: true })).toBeVisible();
   await expect(page.getByText('₱300.00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('20');
   await page.getByRole('radio', { name: 'Food & drink', exact: true }).click();
   await page.getByRole('radio', { name: 'Wallet: Test bank', exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath('expense-redesign-mobile.png'), fullPage: true });
   await page.getByRole('button', { name: 'Save expense', exact: true }).click();
+  await expect(page.getByTestId('entry-sheet')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(page.getByTestId('today-net')).toContainText('-₱20.00');
   await page.screenshot({ path: testInfo.outputPath('home-mobile.png'), fullPage: true });
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
@@ -68,7 +69,6 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await page.getByRole('button', { name: 'Restore wallet', exact: true }).click();
   await expect(page.getByText('Archived wallets', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
   await expect(page.getByRole('radio', { name: 'Wallet: Everyday', exact: true })).toBeVisible();
 });
 
@@ -80,7 +80,7 @@ test('provider presets keep editable wallet names and use existing wallet kinds'
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   for (const [provider, kind] of [['GCash', 'E-wallet'], ['Maya', 'E-wallet'], ['BPI', 'Bank'], ['MariBank', 'Bank'], ['GoTyme', 'Bank']]) {
-    await page.getByRole('link', { name: 'Add wallet', exact: true }).click();
+    await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
     await page.getByRole('radio', { name: kind, exact: true }).click();
     await page.getByRole('button', { name: `Use ${provider} preset`, exact: true }).click();
     await expect(page.getByLabel('Wallet name', { exact: true })).toHaveValue(provider);
@@ -110,15 +110,15 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   for (const name of ['GCash', 'GCash 2']) {
-    await page.getByRole('link', { name: 'Add wallet', exact: true }).click();
+    await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
     await page.getByRole('radio', { name: 'E-wallet', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Use GoTyme preset', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Use GCash preset', exact: true }).click();
     await expect(page.getByLabel('Wallet name', { exact: true })).toHaveValue(name);
     await page.getByLabel('Wallet name', { exact: true }).focus();
-    await expect(page.getByTestId('bottom-navigation')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Add transaction', exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('entry-sheet')).toBeVisible(); // The form sheet covers the navigation.
     await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+    await expect(page.getByTestId('entry-sheet')).toHaveCount(0);
   }
   await page.getByRole('link', { name: 'Manage GCash 2', exact: true }).click();
   await expect(page.getByLabel('Wallet name', { exact: true })).toHaveCount(0);
@@ -132,9 +132,9 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await expect(page.getByRole('link', { name: 'Manage GCash', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Manage GCash 2', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Add expense', exact: true }).click();
-  await expect(page.getByTestId('bottom-navigation')).toHaveCount(0);
+  await expect(page.getByTestId('entry-sheet')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Wallet: GCash 2', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await expect(page.getByTestId('entry-sheet')).toHaveCount(0);
   await expect(page.getByTestId('bottom-navigation')).toBeVisible();
 });
