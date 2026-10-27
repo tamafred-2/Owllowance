@@ -37,9 +37,9 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "expo start --android",
     "android:usb": "node scripts/android-usb.mjs",
-    "ios": "expo run:ios",
+    "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
