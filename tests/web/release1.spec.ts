@@ -220,6 +220,14 @@ test('wallet list, grid and swipeable card views; choice is remembered', async (
   await page.reload();
   await expect(front).toContainText('Savings'); // Also after restarting.
   await expect(page.getByRole('radio', { name: 'Card view', exact: true })).toHaveAttribute('aria-checked', 'true');
+  const deck = (await page.getByTestId('wallet-deck').boundingBox())!;
+  await page.mouse.move(deck.x + deck.width / 2, deck.y + deck.height * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(deck.x + deck.width / 2, deck.y + deck.height * 0.3 + 60, { steps: 4 });
+  await page.mouse.move(deck.x + deck.width / 2, deck.y + deck.height * 0.3 + 140, { steps: 4 });
+  await page.mouse.up();
+  await expect(front).toContainText('Cash'); // Swipe down brings the previous wallet back.
+  await page.waitForTimeout(400); // Let the swipe settle; a tap ending a swipe is intentionally ignored.
   await front.click();
   await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toBeVisible();
 });

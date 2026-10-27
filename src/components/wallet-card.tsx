@@ -46,7 +46,7 @@ export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balan
       <View style={{ gap: 2, marginTop: 'auto' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>{balanceToggle ? null : <AppIcon name="expense" size={12} color={palette.ink} />}</View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <View style={{ flex: 1 }}><MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} hidden={hidden} style={{ color: palette.ink }} /></View>
+          <View style={{ flex: 1 }}><MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} fit hidden={hidden} style={{ color: palette.ink }} /></View>
           {balanceToggle ? <View style={{ marginRight: -8 }}>{balanceToggle(palette.ink)}</View> : null}
         </View>
       </View>

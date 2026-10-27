@@ -16,7 +16,7 @@ export function AppText({ tone = 'primary', size = 16, weight = '400', style, ..
 // `hidden` masks the visible text and its accessibility label.
 export function MoneyText({ value, size = 24, style, fit = false, hidden = false }: { value: number; size?: number; style?: TextProps['style']; fit?: boolean; hidden?: boolean }) {
   return <AppText size={size} weight="600" numberOfLines={fit ? 1 : undefined} adjustsFontSizeToFit={fit} minimumFontScale={0.6}
-    accessibilityLabel={hidden ? 'Amount hidden' : undefined} style={[{ fontVariant: ['tabular-nums'] }, style]}>{hidden ? '₱ ••••' : formatMoney(value)}</AppText>;
+    accessibilityLabel={hidden ? 'Amount hidden' : undefined} style={[{ fontVariant: ['tabular-nums'] }, style]}>{hidden ? '₱ ••••' : formatMoney(value)}</AppText>;
 }
 
 // `iconOnly` keeps the label for screen readers and shows a round icon button.
