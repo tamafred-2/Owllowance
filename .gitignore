@@ -49,3 +49,11 @@ __pycache__/
 
 # Packaged release APKs (uploaded to GitHub Releases, not committed)
 releases/
+
+# Internal project notes and assistant instructions (kept locally, not published)
+/.agents/
+/AGENTS.md
+/docs/
+/Owllowance-Project-Pack.md
+/assets/reference/brand/VERIFICATION.md
+/assets/reference/handoff/docs/

@@ -1,33 +1,35 @@
 # Owllowance
 
-Budget & Expense Tracker. A local-first React Native + Expo + TypeScript app for Android, iOS and web.
+A calm, offline budget and expense tracker for Android. Your records stay on your phone: no account, no ads, no internet needed.
 
-The initial build includes one PHP cash wallet, an explicit opening balance, expense entry, Home totals and paginated Activity. It does not yet include the complete Release 1 feature set or backup/restore.
+## Download
 
-Use Node.js 24 LTS and npm. Dependencies are locked in `package-lock.json`.
+Get the latest APK from **[Releases](https://github.com/tamafred-2/Owllowance/releases)**. Open the file on your Android phone and allow installing from your browser or file manager when asked. It runs on most phones from the last several years (64-bit ARM).
+
+Each release lists a SHA-256 checksum so you can confirm the file is genuine.
+
+## Features
+
+- Expenses and income across Cash, e-wallets and bank wallets
+- Transfers between wallets, with optional fees
+- Budgets, recurring bills with reminders, and savings goals with photos
+- Debts: what you owe and what is owed to you
+- Insights by category; history with search, filters and CSV export
+- Home-screen widgets for payments due, quick add and net worth
+- App lock (fingerprint, face or PIN) and password-protected backups
+- Light and dark themes
+
+## Your data
+
+Everything is stored only on your device. Export a backup regularly from **Settings → Export backup**; add a password to encrypt it. If you uninstall the app or lose your phone without a backup, your records cannot be recovered.
+
+## Build from source
+
+Requires Node.js 24 LTS and npm.
 
 ```powershell
 npm ci
-npm start
+npm start          # Expo development server
+npm run web        # browser version
+npm test           # unit tests
 ```
-
-For browser development, run `npm run web`. To test offline reopening, use the production build:
-
-```powershell
-npm run export:web
-npm run serve:web
-```
-
-Open http://localhost:4173. The preview server provides the response headers required by SQLite/WASM. Browser records belong to that origin; a different host or port has a separate dataset.
-
-```powershell
-npm run typecheck
-npm run lint
-npm test
-npx playwright install chromium
-npm run test:web
-```
-
-Browser tests use isolated synthetic records. Run `npm run export:web` before browser tests after changing application code.
-
-See [setup and platform limits](docs/SETUP.md), [verified status](docs/STATUS.md) and the [documentation map](docs/README.md). The original [project pack](Owllowance-Project-Pack.md) is preserved as the baseline; maintained instructions live in `AGENTS.md`, `docs/` and `.agents/skills/owllowance/SKILL.md`.
