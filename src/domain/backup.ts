@@ -2,15 +2,15 @@ import { MAX_MINOR, ValidationError } from './money';
 
 // Portable, unencrypted JSON backup. Rows mirror the storage columns of schema v4.
 export const BACKUP_FORMAT = 'owllowance-backup';
-export const BACKUP_SCHEMA_VERSION = 7;
+export const BACKUP_SCHEMA_VERSION = 8;
 // Older files still restore: version 4 has no recurring items, versions 4-5 have no goals,
-// versions 4-6 have no goal descriptions, photos or wallet-backed goal money.
+// versions 4-6 have no goal descriptions, photos or wallet-backed goal money, versions 4-7 have no debts.
 const MAX_RECORDS = 500_000;
 
 type Row = Record<string, string | number | null>;
 export type BackupRecords = {
   profiles: Row[]; accounts: Row[]; categories: Row[]; transactions: Row[]; entries: Row[]; budgets: Row[]; settings: Row[];
-  recurring: Row[]; recurring_occurrences: Row[]; goals: Row[]; goal_contributions: Row[];
+  recurring: Row[]; recurring_occurrences: Row[]; goals: Row[]; goal_contributions: Row[]; debts: Row[]; debt_entries: Row[];
 };
 export type BackupEnvelope = {
   format: typeof BACKUP_FORMAT; schemaVersion: number; exportedAt: string; appVersion: string; currency: 'PHP'; records: BackupRecords;
@@ -30,11 +30,13 @@ export const backupColumns: Record<keyof BackupRecords, string[]> = {
   settings: ['key', 'value'],
   recurring: ['id', 'profile_id', 'name', 'type', 'amount_minor', 'account_id', 'category_id', 'frequency', 'every', 'start_date', 'paused'],
   recurring_occurrences: ['recurring_id', 'due_date', 'status', 'transaction_id'],
-  goals: ['id', 'profile_id', 'name', 'target_minor', 'target_date', 'icon_key', 'color_token', 'archived_at', 'description', 'image_uri'],
+  goals: ['id', 'profile_id', 'name', 'target_minor', 'target_date', 'icon_key', 'color_token', 'archived_at', 'description', 'image_uri', 'completed_at'],
   goal_contributions: ['id', 'goal_id', 'amount_minor', 'local_date', 'note', 'transaction_id'],
+  debts: ['id', 'profile_id', 'name', 'direction', 'due_date', 'note', 'archived_at'],
+  debt_entries: ['id', 'debt_id', 'amount_minor', 'local_date', 'note', 'transaction_id'],
 };
 const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor', 'every', 'paused', 'target_minor']);
-const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id', 'target_date', 'image_uri']);
+const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id', 'target_date', 'image_uri', 'completed_at', 'due_date']);
 const uuid = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i;
 
 function fail(message: string): never { throw new ValidationError(`This backup can't be restored: ${message}`); }
@@ -44,7 +46,7 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   if (!input || typeof input !== 'object') fail('the file is not an Owllowance backup.');
   const candidate = input as Partial<BackupEnvelope>;
   if (candidate.format !== BACKUP_FORMAT) fail('the file is not an Owllowance backup.');
-  if (![4, 5, 6, BACKUP_SCHEMA_VERSION].includes(Number(candidate.schemaVersion))) fail('it was made by an unsupported version of Owllowance.');
+  if (![4, 5, 6, 7, BACKUP_SCHEMA_VERSION].includes(Number(candidate.schemaVersion))) fail('it was made by an unsupported version of Owllowance.');
   if (candidate.currency !== 'PHP') fail('its currency is not supported.');
   if (typeof candidate.exportedAt !== 'string' || !Number.isFinite(Date.parse(candidate.exportedAt))) fail('its export date is invalid.');
   const records = candidate.records;
@@ -52,7 +54,8 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   let count = 0;
   for (const [table, columns] of Object.entries(backupColumns) as [keyof BackupRecords, string[]][]) {
     const addedLater = ((table === 'recurring' || table === 'recurring_occurrences') && candidate.schemaVersion === 4)
-      || ((table === 'goals' || table === 'goal_contributions') && Number(candidate.schemaVersion) < 6);
+      || ((table === 'goals' || table === 'goal_contributions') && Number(candidate.schemaVersion) < 6)
+      || ((table === 'debts' || table === 'debt_entries') && Number(candidate.schemaVersion) < 8);
     if (addedLater && records[table] === undefined) records[table] = [];
     const rows = records[table];
     if (!Array.isArray(rows)) fail(`${table} are missing.`);
@@ -61,6 +64,7 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     for (const row of rows) {
       if (!row || typeof row !== 'object' || Array.isArray(row)) fail(`a ${table} record is malformed.`);
       if (Number(candidate.schemaVersion) < 7 && table === 'goals') Object.assign(row, { description: '', image_uri: null }, row);
+      if (Number(candidate.schemaVersion) < 8 && table === 'goals') Object.assign(row, { completed_at: null }, row);
       if (Number(candidate.schemaVersion) < 7 && table === 'goal_contributions') Object.assign(row, { transaction_id: null }, row);
       if (Object.keys(row).length !== columns.length) fail(`a ${table} record has unexpected fields.`);
       for (const column of columns) {
@@ -88,6 +92,22 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     const transactionId = String(contribution.transaction_id);
     if (typeOf.get(transactionId) !== 'transfer' || goalMoves.has(transactionId)) fail('a goal contribution refers to a missing transaction.');
     goalMoves.set(transactionId, Number(contribution.amount_minor));
+  }
+  // Debts: borrowing/being repaid credits the wallet for money I owe, the reverse for money owed to me.
+  const debtIds = ids(records.debts);
+  if (debtIds.size !== records.debts.length) fail('it contains duplicate records.');
+  const directionOf = new Map(records.debts.map(debt => [String(debt.id), String(debt.direction)]));
+  for (const debt of records.debts) {
+    if (!uuid.test(String(debt.id))) fail('it contains an invalid identifier.');
+    if (debt.direction !== 'owe' && debt.direction !== 'owed') fail('a debt record is malformed.');
+  }
+  for (const entry of records.debt_entries) {
+    if (!uuid.test(String(entry.id))) fail('it contains an invalid identifier.');
+    if (!debtIds.has(String(entry.debt_id))) fail('a debt entry refers to a missing debt.');
+    if (entry.transaction_id === null) continue;
+    const transactionId = String(entry.transaction_id);
+    if (typeOf.get(transactionId) !== 'transfer' || goalMoves.has(transactionId)) fail('a debt entry refers to a missing transaction.');
+    goalMoves.set(transactionId, (directionOf.get(String(entry.debt_id)) === 'owe' ? -1 : 1) * Number(entry.amount_minor));
   }
   const byTransaction = new Map<string, Row[]>();
   for (const entry of entries) {

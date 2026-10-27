@@ -1,6 +1,6 @@
 import type {
   ActivityItem, BudgetCommand, BudgetPeriod, CategoryCommand, CategoryType, DueItem, EditEntryCommand, EntryCommand, LedgerRepository,
-  ContributionCommand, EditTransferCommand, GoalCommand, OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
+  CompleteGoalCommand, ContributionCommand, DebtCommand, DebtDirection, DebtEntryCommand, EditTransferCommand, GoalCommand, OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
 } from '../../../domain/ledger';
 import type { Frequency } from '../../../domain/recurring';
 import { addDays, assertLocalDate, eventTime, eventTimeOn } from '../../../domain/date';
@@ -100,6 +100,26 @@ export class TrackerService {
     if (!input.walletId) throw new ValidationError('Choose a wallet.');
     const amount = parseAmount(input.amount);
     return { id: this.uuid(), goalId: input.goalId, walletId: input.walletId, amountMinor: input.takeOut ? -amount : amount, note: input.note.trim(), ...this.when(input.localDate) };
+  }
+
+  completeGoal(input: { goalId: string; walletId: string; categoryId: string; amount: string; localDate: string; note: string }): CompleteGoalCommand {
+    if (!input.walletId) throw new ValidationError('Choose a wallet.');
+    if (!input.categoryId) throw new ValidationError('Choose a category.');
+    return { goalId: input.goalId, moveId: this.uuid(), expenseId: this.uuid(), walletId: input.walletId, categoryId: input.categoryId,
+      amountMinor: parseAmount(input.amount), note: input.note.trim(), ...this.when(input.localDate) };
+  }
+
+  // Paying down is stored as a negative entry. No wallet records it without moving money.
+  prepareDebtEntry(input: { debtId: string; walletId: string | null; amount: string; payment: boolean; localDate: string; note: string }): DebtEntryCommand {
+    const amount = parseAmount(input.amount);
+    return { id: this.uuid(), debtId: input.debtId, walletId: input.walletId || null, amountMinor: input.payment ? -amount : amount, note: input.note.trim(), ...this.when(input.localDate) };
+  }
+
+  prepareDebt(input: { id?: string; name: string; direction: DebtDirection; dueDate: string | null; note: string; amount?: string; walletId?: string | null; localDate?: string }): DebtCommand {
+    const id = input.id ?? this.uuid();
+    const initial = input.amount === undefined ? undefined
+      : this.prepareDebtEntry({ debtId: id, walletId: input.walletId ?? null, amount: input.amount, payment: false, localDate: input.localDate ?? eventTime().localDate, note: '' });
+    return { id, name: input.name, direction: input.direction, dueDate: input.dueDate, note: input.note, initial };
   }
 
   private when(localDate?: string) {

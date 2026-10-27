@@ -12,13 +12,14 @@ import { SheetHost } from '../features/tracker/presentation/entry-sheet';
 import { useOpenSheet } from '../features/tracker/presentation/sheet-context';
 import { useReminderSync } from '../features/tracker/presentation/reminders';
 import { GettingStartedGate } from '../features/tracker/presentation/getting-started';
+import { AppLockGate } from '../features/tracker/presentation/app-lock';
 import * as SplashScreen from 'expo-splash-screen';
 import { finishNativeLoading, hasNativeLoading } from '../platform/native-loading';
 
 function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activity' | '/accounts' | '/plan'; label: string; icon: IconName; compact?: boolean }) {
   const path = usePathname();
   const { colors, isDark } = useTheme();
-  const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage')) || (href === '/plan' && (path === '/goal' || path === '/goal-edit'));
+  const active = path === href || (href === '/' && (path === '/debts' || path === '/debt' || path === '/debt-edit')) || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage')) || (href === '/plan' && (path === '/goal' || path === '/goal-edit'));
   // A soft round accent pill marks the current tab; pressing fades it (no rectangular ripple).
   const tint = isDark ? 'rgba(164, 198, 232, 0.18)' : 'rgba(36, 71, 107, 0.12)';
   return <Link href={href} asChild>
@@ -78,6 +79,7 @@ export function AppShell() {
     <SheetHost>
     <ReminderSync />
     <GettingStartedGate />
+    <AppLockGate />
     <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }}>
       {wide ? <View style={[styles.sidebar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ padding: 14, gap: 4, marginBottom: 36 }}>

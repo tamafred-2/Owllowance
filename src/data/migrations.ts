@@ -13,7 +13,7 @@ export async function seedFeeCategory(sql: SqlConnection): Promise<void> {
 }
 
 export const FEE_CATEGORY = '00000000-0000-4000-8000-000000000106';
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 // v4: transfers carry two entries, linked fee expenses, budgets and preferences.
 const ledgerSchema = `
 CREATE TABLE transactions (
@@ -106,6 +106,31 @@ ALTER TABLE goals ADD COLUMN description TEXT NOT NULL DEFAULT '' CHECK (length(
 ALTER TABLE goals ADD COLUMN image_uri TEXT CHECK (image_uri IS NULL OR length(image_uri) <= 1000);
 ALTER TABLE goal_contributions ADD COLUMN transaction_id TEXT REFERENCES transactions(id);
 CREATE UNIQUE INDEX goal_contributions_transaction ON goal_contributions(transaction_id);
+`;
+// v8: completed goals, and debts (money owed to or by someone). A debt entry with a wallet owns a
+// one-sided transfer like goal money: borrowing or being repaid credits the wallet, paying back or
+// lending debits it. Debts never change net worth; "after debts" is shown separately.
+const v8Objects = `
+ALTER TABLE goals ADD COLUMN completed_at TEXT;
+CREATE TABLE debts (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 60),
+  direction TEXT NOT NULL CHECK (direction IN ('owe','owed')),
+  due_date TEXT CHECK (due_date IS NULL OR length(due_date) = 10),
+  note TEXT NOT NULL CHECK (length(note) <= 500),
+  archived_at TEXT
+);
+CREATE TABLE debt_entries (
+  id TEXT PRIMARY KEY NOT NULL,
+  debt_id TEXT NOT NULL REFERENCES debts(id),
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor <> 0 AND abs(amount_minor) <= ${MAX_MINOR}),
+  local_date TEXT NOT NULL CHECK (length(local_date) = 10),
+  note TEXT NOT NULL CHECK (length(note) <= 200),
+  transaction_id TEXT REFERENCES transactions(id)
+);
+CREATE INDEX debt_entries_debt ON debt_entries(debt_id, local_date);
+CREATE UNIQUE INDEX debt_entries_transaction ON debt_entries(transaction_id);
 `;
 const v4Objects = `
 CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN ${entrySignCheck} END;
@@ -282,6 +307,12 @@ export async function migrate(database: Database): Promise<void> {
       if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
       await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 7, new Date().toISOString());
       await sql.execAsync('PRAGMA user_version = 7');
+    }
+    if (version < 8) {
+      await sql.execAsync(v8Objects);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 8, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 8');
     }
   });
 }

@@ -200,19 +200,21 @@ test('history filters combine type, category, wallet, date range and literal sea
 
 test('settings persist with validated values; each balance is hidden independently', async t => {
   const f = await fixture(); t.after(() => f.connection.sqlite.close());
-  assert.deepEqual((await f.repository.overview()).settings, { theme: 'system', walletView: 'grid', deckWallet: null, reminders: false, guideSeen: false, hiddenBalances: [], reduceMotion: false, lastBackupAt: null });
+  assert.deepEqual((await f.repository.overview()).settings, { theme: 'system', walletView: 'grid', deckWallet: null, reminders: false, guideSeen: false, hiddenBalances: [], reduceMotion: false, lastBackupAt: null, appLock: false });
   await f.repository.saveSettings({ theme: 'dark', walletView: 'cards', deckWallet: f.setup.walletId, reminders: true, lastBackupAt: '2026-10-27T01:00:00.000Z' });
   await f.repository.setBalanceHidden(f.setup.walletId, true);
   await f.repository.setBalanceHidden('net-worth', true);
   await f.repository.setBalanceHidden('net-worth', false);
-  assert.deepEqual((await f.repository.overview()).settings, { theme: 'dark', walletView: 'cards', deckWallet: f.setup.walletId, reminders: true, guideSeen: false, hiddenBalances: [f.setup.walletId], reduceMotion: false, lastBackupAt: '2026-10-27T01:00:00.000Z' });
+  assert.deepEqual((await f.repository.overview()).settings, { theme: 'dark', walletView: 'cards', deckWallet: f.setup.walletId, reminders: true, guideSeen: false, hiddenBalances: [f.setup.walletId], reduceMotion: false, lastBackupAt: '2026-10-27T01:00:00.000Z', appLock: false });
   assert.throws(() => f.repository.setBalanceHidden('everything', true), /identifier/);
   assert.throws(() => f.repository.saveSettings({ theme: 'neon' as 'dark' }), /theme/);
   assert.throws(() => f.repository.saveSettings({ walletView: 'tiles' as 'grid' }), /wallet view/);
   const backup = JSON.parse(JSON.stringify(await f.repository.exportBackup('test')));
   await f.repository.setBalanceHidden(f.setup.walletId, false);
+  await f.repository.saveSettings({ appLock: true });
   await f.repository.restoreBackup(backup);
   assert.deepEqual((await f.repository.overview()).settings.hiddenBalances, [f.setup.walletId]); // Survives backup/restore.
+  assert.equal((await f.repository.overview()).settings.appLock, true); // App lock belongs to the device, not the backup.
 });
 
 test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls back', async t => {
@@ -222,7 +224,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
   // Recreate the v3 shape: one entry per transaction, no linked fees, budgets or settings.
   f.connection.sqlite.exec(`
     CREATE TEMP TABLE t3 AS SELECT ${columns} FROM transactions; CREATE TEMP TABLE e3 AS SELECT * FROM entries;
-    DROP TABLE goal_contributions; DROP TABLE goals; DROP TABLE recurring_occurrences; DROP TABLE recurring; DROP TABLE entries; DROP TABLE transactions; DROP TABLE budgets; DROP TABLE settings; DROP TABLE restore_snapshots;
+    DROP TABLE debt_entries; DROP TABLE debts; DROP TABLE goal_contributions; DROP TABLE goals; DROP TABLE recurring_occurrences; DROP TABLE recurring; DROP TABLE entries; DROP TABLE transactions; DROP TABLE budgets; DROP TABLE settings; DROP TABLE restore_snapshots;
     CREATE TABLE transactions (id TEXT PRIMARY KEY NOT NULL, profile_id TEXT NOT NULL REFERENCES profiles(id),
       type TEXT NOT NULL CHECK (type IN ('expense','income','opening')), occurred_at TEXT NOT NULL, local_date TEXT NOT NULL,
       time_zone TEXT NOT NULL, offset_minutes INTEGER NOT NULL, note TEXT NOT NULL, category_id TEXT,
@@ -239,7 +241,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
   assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 3);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   await repository.initialize(); await repository.initialize();
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 7);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 8);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   const view = await repository.overview();
   assert.deepEqual([view.totalBalanceMinor, view.spentMinor], [98_750, 1_250]);
@@ -293,7 +295,7 @@ test('corrupt or unsupported backups are rejected before live data changes', asy
 });
 
 test('CSV export quotes text and neutralizes spreadsheet formulas', () => {
-  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null, counterpartyId: null, goalId: null };
+  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null, counterpartyId: null, goalId: null, debtId: null, debtDirection: null };
   const csv = transactionsCsv([
     { ...base, id: '1', type: 'expense', localDate: '2026-10-14', note: '=HYPERLINK("x")', amountMinor: -1205, walletName: 'Cash, main', categoryName: 'Food', counterpartyName: null },
     { ...base, id: '2', type: 'transfer', localDate: '2026-10-14', note: '', amountMinor: 5, walletName: '+Bank', categoryName: null, counterpartyName: 'Cash' },

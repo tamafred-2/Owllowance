@@ -88,6 +88,10 @@ export function AccountsScreen() {
                 <BalanceEye target={NET_WORTH} color={palette.secondary} size={16} />
               </View>
               <MoneyText value={overview.totalBalanceMinor} size={24} fit hidden={overview.settings.hiddenBalances.includes(NET_WORTH)} style={{ color: palette.text }} />
+              {overview.oweMinor || overview.owedMinor ? <Pressable accessibilityRole="link" accessibilityLabel="Open debts" onPress={() => router.push('/debts')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <AppText size={12} style={{ color: palette.secondary }}>After debts</AppText>
+                <MoneyText value={overview.totalBalanceMinor - overview.oweMinor + overview.owedMinor} size={13} hidden={overview.settings.hiddenBalances.includes(NET_WORTH)} style={{ color: palette.secondary, fontWeight: '600' }} />
+              </Pressable> : null}
             </Surface>;
           }}
         </ForestScene>

@@ -1,10 +1,20 @@
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { AppText, Button, Feedback, FormField, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { useWalletSetup } from './use-entry-forms';
 
+// First run starts with a Cash wallet at ₱0.00 (its starting balance can be set on its page).
+// The form only shows if that could not be saved, so the user can retry or name it differently.
 export function WalletSetup() {
   const form = useWalletSetup();
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void form.submit(true);
+  }, [form]);
+  if (!form.error) return <View testID="wallet-setup-pending" style={{ flex: 1, minHeight: 200 }} />;
   return <View style={{ width: '100%', maxWidth: 580, alignSelf: 'center', gap: 24, paddingVertical: 24 }}>
     <AppIcon name="wallet" size={32} />
     <View style={{ gap: 8 }}><AppText size={28} weight="600">Start with one wallet.</AppText>

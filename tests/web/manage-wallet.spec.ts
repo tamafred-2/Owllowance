@@ -1,11 +1,10 @@
-import { expect, test } from './fixtures';
+import { expect, test, startWithCash } from './fixtures';
 
 test('Manage wallet keeps rename optional and adds income to the chosen wallet', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('100');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '100');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('Savings');
@@ -51,7 +50,7 @@ test('wallet dropdown stays beside its trigger and opens wallet-specific actions
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page);
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   const trigger = page.getByRole('button', { name: 'Wallet options: Cash', exact: true });
   const triggerBox = await trigger.boundingBox();

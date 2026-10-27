@@ -4,9 +4,16 @@ import { displayDate } from '../domain/date';
 import { AppText, MoneyText } from '../design-system/primitives';
 import { AppIcon, type IconName } from '../design-system/icon';
 import { categoryColors, useTheme } from '../design-system/theme';
+import { debtEntryLabel } from '../domain/debt';
 
 function title(item: ActivityItem, walletHistory: boolean): string {
   if (item.type === 'opening') return 'Opening balance';
+  if (item.debtId && item.debtDirection) {
+    // For money I owe, a credit is borrowing and a debit is paying back; the reverse when lending.
+    const label = debtEntryLabel(item.debtDirection, item.debtDirection === 'owe' ? item.amountMinor : -item.amountMinor);
+    const preposition = label === 'Borrowed' || label === 'Got back' ? 'from' : 'to';
+    return `${label} ${preposition} ${item.counterpartyName}${walletHistory ? '' : ` · ${item.walletName}`}`;
+  }
   if (item.goalId) {
     const into = item.amountMinor < 0;
     if (!walletHistory) return into ? `${item.walletName} → ${item.counterpartyName}` : `${item.counterpartyName} → ${item.walletName}`;
@@ -23,7 +30,7 @@ function title(item: ActivityItem, walletHistory: boolean): string {
 export function TransactionRow({ item, walletHistory = false, onPress }: { item: ActivityItem; walletHistory?: boolean; onPress?: (item: ActivityItem) => void }) {
   const { colors, isDark } = useTheme();
   const tint = item.categoryId ? categoryColors(item.colorToken, isDark) : { background: colors.muted, foreground: colors.textSecondary };
-  const icon = (item.type === 'expense' || item.type === 'income') && item.iconKey ? item.iconKey as IconName : item.goalId ? 'goals' : item.type;
+  const icon = (item.type === 'expense' || item.type === 'income') && item.iconKey ? item.iconKey as IconName : item.goalId ? 'goals' : item.debtId ? 'debt' : item.type;
   // Global history shows a transfer once as a neutral movement; wallet history shows its signed side.
   const neutral = item.type === 'transfer' && !walletHistory;
   const positive = item.type === 'income' || (item.type === 'transfer' && walletHistory && item.amountMinor > 0);

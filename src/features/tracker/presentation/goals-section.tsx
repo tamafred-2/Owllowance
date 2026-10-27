@@ -59,7 +59,7 @@ export function GoalsSection() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <GoalBadge goal={goal} />
           <AppText size={15} weight="600" style={{ flex: 1 }} numberOfLines={1}>{goal.name}</AppText>
-          {goal.archivedAt ? <AppText size={12} tone="secondary">Archived</AppText> : <AppIcon name="next" size={18} color={colors.textSecondary} />}
+          {goal.completedAt ? <AppText size={12} tone="success">Completed</AppText> : goal.archivedAt ? <AppText size={12} tone="secondary">Archived</AppText> : <AppIcon name="next" size={18} color={colors.textSecondary} />}
         </View>
         <GoalProgress goal={goal} />
       </Pressable>)}</View> : <AppText size={14} tone="secondary" style={{ paddingVertical: 10 }}>Save toward something: a new phone, a trip or an emergency fund.</AppText>}

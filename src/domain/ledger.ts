@@ -4,7 +4,8 @@ import type { Frequency } from './recurring';
 
 export type WalletKind = 'cash' | 'bank' | 'ewallet';
 export const walletKindLabels: Record<WalletKind, string> = { cash: 'Cash', bank: 'Bank', ewallet: 'E-wallet' };
-export type Wallet = { id: string; name: string; kind: WalletKind; archivedAt: string | null; balanceMinor: number };
+// openingMinor: the starting balance the wallet was created with (editable, never income).
+export type Wallet = { id: string; name: string; kind: WalletKind; archivedAt: string | null; balanceMinor: number; openingMinor: number };
 export type CategoryType = 'expense' | 'income';
 export type Category = { id: string; name: string; iconKey: string; colorToken: string };
 export type ManagedCategory = Category & { type: CategoryType; archivedAt: string | null; custom: boolean };
@@ -19,6 +20,8 @@ export type ActivityItem = EventTime & {
   feeMinor: number | null;
   // Money moved into (negative) or out of (positive) a savings goal; managed from the goal.
   goalId: string | null;
+  // Money borrowed, lent or repaid; managed from the debt.
+  debtId: string | null; debtDirection: DebtDirection | null;
 };
 export type HistoryFilter = {
   walletId?: string; type?: 'expense' | 'income' | 'transfer'; categoryId?: string;
@@ -37,9 +40,10 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 // hiddenBalances: wallet IDs (or NET_WORTH) whose balance is masked on screen.
 export type WalletView = 'grid' | 'list' | 'cards';
 // deckWallet: the wallet last left in front of the card view.
-export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; reminders: boolean; guideSeen: boolean; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
+// appLock: ask for the phone's fingerprint/face/PIN when opening; kept per device, not restored from backups.
+export type Settings = { theme: ThemePreference; walletView: WalletView; deckWallet: string | null; reminders: boolean; guideSeen: boolean; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null; appLock: boolean };
 export const NET_WORTH = 'net-worth';
-export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, reminders: false, guideSeen: false, hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
+export const defaultSettings: Settings = { theme: 'system', walletView: 'grid', deckWallet: null, reminders: false, guideSeen: false, hiddenBalances: [], reduceMotion: false, lastBackupAt: null, appLock: false };
 export type RecurringRule = {
   id: string; name: string; type: CategoryType; amountMinor: number; walletId: string; walletName: string;
   categoryId: string; categoryName: string; iconKey: string; colorToken: string;
@@ -56,7 +60,22 @@ export type Goal = {
   archivedAt: string | null; savedMinor: number;
   // Has moved money with a wallet, so it keeps its history: archive instead of delete.
   hasWalletMoves: boolean;
+  // Set when the goal was used ("I bought it"); completed goals are also archived.
+  completedAt: string | null;
 };
+// Spends a goal: its money returns to the wallet and the purchase is recorded there as an expense.
+export type CompleteGoalCommand = EventTime & { goalId: string; moveId: string; expenseId: string; walletId: string; categoryId: string; amountMinor: number; note: string };
+// owe: I owe this person; owed: they owe me.
+export type DebtDirection = 'owe' | 'owed';
+export type Debt = {
+  id: string; name: string; direction: DebtDirection; dueDate: string | null; note: string; archivedAt: string | null;
+  balanceMinor: number; hasWalletMoves: boolean;
+};
+// Positive increases what is owed, negative pays it down. walletId null records it without moving wallet money.
+export type DebtEntry = { id: string; debtId: string; amountMinor: number; localDate: string; note: string; walletId: string | null; walletName: string | null };
+export type DebtEntryCommand = EventTime & { id: string; debtId: string; amountMinor: number; walletId: string | null; note: string };
+export type DebtCommand = { id: string; name: string; direction: DebtDirection; dueDate: string | null; note: string; initial?: DebtEntryCommand };
+export type Streak = { current: number; best: number; loggedToday: boolean };
 // walletId is null for amounts recorded before goals used wallets.
 export type GoalContribution = { id: string; goalId: string; amountMinor: number; localDate: string; note: string; walletId: string | null; walletName: string | null };
 export type GoalCommand = { id: string; name: string; description: string; imageUri: string | null; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string };
@@ -80,6 +99,10 @@ export type Overview = {
   budgets: Budget[];
   due: DueItem[];
   goals: Goal[];
+  debts: Debt[];
+  // Totals of open debts: what I owe and what is owed to me.
+  oweMinor: number; owedMinor: number;
+  streak: Streak;
   settings: Settings;
   restoreSnapshotAt: string | null;
 };
@@ -110,6 +133,7 @@ export interface LedgerRepository {
   history(offset: number, limit: number, filter?: string | HistoryFilter): Promise<ActivityItem[]>;
   transaction(id: string): Promise<ActivityItem | null>;
   createWallet(command: OpeningCommand): Promise<void>;
+  setStartingBalance(walletId: string, amountMinor: number): Promise<void>;
   renameWallet(walletId: string, name: string): Promise<void>;
   setWalletArchived(walletId: string, archived: boolean): Promise<void>;
   addExpense(command: EntryCommand): Promise<void>;
@@ -138,6 +162,13 @@ export interface LedgerRepository {
   goalContributions(goalId: string): Promise<GoalContribution[]>;
   addContribution(command: ContributionCommand): Promise<void>;
   deleteContribution(id: string): Promise<void>;
+  completeGoal(command: CompleteGoalCommand): Promise<void>;
+  saveDebt(command: DebtCommand): Promise<void>;
+  setDebtArchived(id: string, archived: boolean): Promise<void>;
+  deleteDebt(id: string): Promise<void>;
+  debtEntries(debtId: string): Promise<DebtEntry[]>;
+  addDebtEntry(command: DebtEntryCommand): Promise<void>;
+  deleteDebtEntry(id: string): Promise<void>;
   exportBackup(appVersion: string): Promise<BackupEnvelope>;
   restoreBackup(envelope: BackupEnvelope): Promise<void>;
   undoRestore(): Promise<void>;

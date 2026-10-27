@@ -3,14 +3,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { AppModal } from '../../../components/app-modal';
-import { AppText, Button, Chip, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppText, Button, Chip, Feedback, FormField, MoneyText, Surface, ToggleRow } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { useTheme } from '../../../design-system/theme';
 import { parseBackup, type BackupEnvelope, type BackupPreview } from '../../../domain/backup';
 import { eventTime } from '../../../domain/date';
 import type { Settings, ThemePreference } from '../../../domain/ledger';
 import { ValidationError } from '../../../domain/money';
+import { checkBackupPassword, decryptBackup, encryptBackup, isEncryptedBackup } from '../../../domain/backup-crypto';
 import { pickTextFile, saveTextFile } from '../../../platform/files';
+import { canLockApp, lockAvailable, unlockWithDevice } from '../../../platform/app-lock';
+import { randomBytes } from '../../../platform/random';
+import { markAppUnlocked } from './app-lock';
 import { useTracker } from './tracker-context';
 import { ReminderToggle } from './reminders';
 import { GettingStarted } from './getting-started';
@@ -30,6 +34,11 @@ export function SettingsScreen() {
   const [pending, setPending] = useState<{ envelope: BackupEnvelope; preview: BackupPreview } | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  // Export asks for an optional password; an encrypted file asks for its password before the preview.
+  const [exporting, setExporting] = useState(false);
+  const [lockedFile, setLockedFile] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
   const inFlight = useRef(false);
   async function run(task: string, work: () => Promise<string | null>) {
     if (!service || inFlight.current) return;
@@ -39,18 +48,40 @@ export function SettingsScreen() {
     finally { inFlight.current = false; setBusy(null); }
   }
   const update = (change: Partial<Settings>) => run('settings', async () => { await service!.repository.saveSettings(change); await refresh(); return null; });
-  const exportBackup = () => run('export', async () => {
+  const closePassword = () => { setExporting(false); setLockedFile(null); setPassword(''); setConfirmation(''); };
+  const exportBackup = (protect: boolean) => run('export', async () => {
+    if (protect) checkBackupPassword(password, confirmation);
     const envelope = await service!.repository.exportBackup(appVersion);
-    await saveTextFile(`owllowance-backup-${eventTime().localDate}.json`, JSON.stringify(envelope), 'application/json');
+    const json = JSON.stringify(envelope);
+    const date = eventTime().localDate;
+    if (protect) await saveTextFile(`owllowance-backup-${date}-protected.json`, await encryptBackup(json, password, randomBytes), 'application/json');
+    else await saveTextFile(`owllowance-backup-${date}.json`, json, 'application/json');
     await service!.repository.saveSettings({ lastBackupAt: envelope.exportedAt });
     await refresh();
-    return 'Backup file created. Keep it somewhere safe.';
+    closePassword();
+    return protect ? 'Password-protected backup created. Keep the password safe: it cannot be recovered.' : 'Backup file created. Keep it somewhere safe.';
   });
   const chooseBackup = () => run('pick', async () => {
     const text = await pickTextFile();
     if (text === null) return null;
+    if (isEncryptedBackup(text)) { setLockedFile(text); return null; }
     setPending(parseBackup(text));
     return null;
+  });
+  const openLockedFile = () => run('decrypt', async () => {
+    const parsed = parseBackup(await decryptBackup(lockedFile!, password));
+    closePassword();
+    setPending(parsed);
+    return null;
+  });
+  // Turning the lock on or off needs the phone's own unlock first.
+  const setAppLock = (value: boolean) => run('lock', async () => {
+    if (value && !await lockAvailable()) throw new ValidationError('Set a screen lock (PIN, pattern or password) on your phone first.');
+    if (!await unlockWithDevice()) return null;
+    await service!.repository.saveSettings({ appLock: value });
+    if (value) markAppUnlocked();
+    await refresh();
+    return value ? 'App lock is on.' : 'App lock is off.';
   });
   const restore = () => run('restore', async () => {
     await service!.repository.restoreBackup(pending!.envelope);
@@ -69,7 +100,7 @@ export function SettingsScreen() {
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
       <View style={{ alignSelf: 'flex-start' }}><Button label="Back" icon="back" iconOnly variant="quiet" onPress={() => router.replace(back)} /></View>
       <AppText accessibilityRole="header" size={28} weight="600">Settings</AppText>
-      {message ? <Feedback error={message.error}>{message.text}</Feedback> : null}
+      {message && !exporting && lockedFile === null ? <Feedback error={message.error}>{message.text}</Feedback> : null}
       <Surface style={{ gap: 14 }}>
         <AppText size={18} weight="600">Appearance</AppText>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
@@ -80,6 +111,11 @@ export function SettingsScreen() {
       <Surface style={{ gap: 14 }}>
         <AppText size={18} weight="600">Reminders</AppText>
         <ReminderToggle />
+      </Surface>
+      <Surface style={{ gap: 14 }}>
+        <AppText size={18} weight="600">Security</AppText>
+        <ToggleRow label="App lock" description={canLockApp ? 'Ask for your fingerprint, face or phone PIN when opening Owllowance, and after 30 seconds away.' : 'Available in the Android app.'}
+          value={settings?.appLock ?? false} disabled={!canLockApp || disabled} onChange={value => { void setAppLock(value); }} />
       </Surface>
       <Pressable accessibilityRole="button" accessibilityLabel="How to use Owllowance" onPress={() => setGuideOpen(true)}>
         <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -97,9 +133,9 @@ export function SettingsScreen() {
       </Pressable>
       <Surface style={{ gap: 14 }}>
         <AppText size={18} weight="600">Backup & restore</AppText>
-        <AppText size={13} tone="secondary">Your records live only on this device. Save a backup file regularly. Backups are not encrypted, so keep the file somewhere private.</AppText>
+        <AppText size={13} tone="secondary">Your records live only on this device. Save a backup file regularly. Add a password to encrypt the file so only you can open it.</AppText>
         <AppText size={13} tone="secondary">{settings?.lastBackupAt ? `Last backup: ${when(settings.lastBackupAt)}` : 'No backup made yet.'}</AppText>
-        <Button label="Export backup" icon="download" busy={busy === 'export'} disabled={disabled} onPress={() => { void exportBackup(); }} />
+        <Button label="Export backup" icon="download" busy={busy === 'export' && !exporting} disabled={disabled} onPress={() => { setMessage(null); setExporting(true); }} />
         <Button label="Restore from backup" icon="upload" variant="secondary" busy={busy === 'pick'} disabled={disabled} onPress={() => { void chooseBackup(); }} />
         {overview?.restoreSnapshotAt ? <Button label="Undo last restore" icon="undo" variant="quiet" disabled={disabled} onPress={() => setConfirmUndo(true)} /> : null}
       </Surface>
@@ -115,6 +151,17 @@ export function SettingsScreen() {
       </View> : null}
       <Button label="Replace and restore" busy={busy === 'restore'} disabled={Boolean(storageError)} onPress={() => { void restore(); }} />
       <Button label="Cancel" variant="quiet" disabled={busy === 'restore'} onPress={() => setPending(null)} />
+    </AppModal>
+    <AppModal title={exporting ? 'Protect this backup?' : 'Backup password'} visible={exporting || lockedFile !== null} onClose={() => { if (!busy) closePassword(); }}>
+      <AppText size={14} tone="secondary">{exporting ? 'With a password, the file is encrypted and only opens with it. A forgotten password cannot be recovered.' : 'This backup is password-protected. Enter its password to continue.'}</AppText>
+      <FormField label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="off" editable={!busy} />
+      {exporting ? <FormField label="Confirm password" value={confirmation} onChangeText={setConfirmation} secureTextEntry autoCapitalize="none" autoComplete="off" editable={!busy} /> : null}
+      {message?.error ? <Feedback error>{message.text}</Feedback> : null}
+      {exporting ? <>
+        <Button label="Export with password" icon="local" busy={busy === 'export'} disabled={Boolean(busy)} onPress={() => { void exportBackup(true); }} />
+        <Button label="Export without password" variant="secondary" disabled={Boolean(busy)} onPress={() => { void exportBackup(false); }} />
+      </> : <Button label="Open backup" busy={busy === 'decrypt'} disabled={Boolean(busy)} onPress={() => { void openLockedFile(); }} />}
+      <Button label="Cancel" variant="quiet" disabled={Boolean(busy)} onPress={closePassword} />
     </AppModal>
     <AppModal title="Undo the last restore?" visible={confirmUndo} onClose={() => { if (!busy) setConfirmUndo(false); }}>
       <AppText size={14} tone="secondary">{`Your data from ${overview?.restoreSnapshotAt ? when(overview.restoreSnapshotAt) : 'before the restore'} comes back. Changes made since the restore will be lost.`}</AppText>

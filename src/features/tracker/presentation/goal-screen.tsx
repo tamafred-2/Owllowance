@@ -4,11 +4,11 @@ import { BackHandler, Image, Pressable, ScrollView, View } from 'react-native';
 import { AppModal } from '../../../components/app-modal';
 import { DateField } from '../../../components/date-field';
 import { WalletBadge } from '../../../components/wallet-card';
-import { AppText, Button, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
-import { AppIcon } from '../../../design-system/icon';
+import { AppText, Button, Chip, Feedback, FormField, MoneyText, Surface } from '../../../design-system/primitives';
+import { AppIcon, type IconName } from '../../../design-system/icon';
 import { useTheme } from '../../../design-system/theme';
 import { walletLabel } from '../../../design-system/wallet-appearance';
-import type { ContributionCommand, Goal, GoalContribution } from '../../../domain/ledger';
+import type { CompleteGoalCommand, ContributionCommand, Goal, GoalContribution } from '../../../domain/ledger';
 import { displayDate, eventTime } from '../../../domain/date';
 import { formatMoney, ValidationError } from '../../../domain/money';
 import { removeGoalImage } from '../../../platform/images';
@@ -77,12 +77,67 @@ function MoveMoney({ goal, takeOut, onDone, onCancel }: { goal: Goal; takeOut: b
   </View>;
 }
 
+// "I bought it": the goal's money returns to a wallet and the purchase is recorded there as an expense.
+function CompleteGoal({ goal, onDone, onCancel }: { goal: Goal; onDone: (message: string) => void; onCancel: () => void }) {
+  const { service, overview, refresh, error: storageError } = useTracker();
+  const { colors } = useTheme();
+  const today = eventTime().localDate;
+  const wallets = overview?.wallets ?? [];
+  const categories = overview?.categories ?? [];
+  const [walletId, setWalletId] = useState(wallets[0]?.id ?? '');
+  const [categoryId, setCategoryId] = useState(categories.find(item => item.name === 'Shopping')?.id ?? categories[0]?.id ?? '');
+  const [amount, setAmount] = useState((goal.savedMinor / 100).toFixed(2));
+  const [localDate, setLocalDate] = useState(today);
+  const [note, setNote] = useState(goal.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const pending = useRef<{ fingerprint: string; command: CompleteGoalCommand } | null>(null);
+  async function submit() {
+    if (!service || inFlight.current) return;
+    inFlight.current = true; setBusy(true); setError(null);
+    try {
+      const values = { goalId: goal.id, walletId, categoryId, amount, localDate, note };
+      const fingerprint = JSON.stringify(values);
+      if (pending.current?.fingerprint !== fingerprint) pending.current = { fingerprint, command: service.completeGoal(values) };
+      await service.repository.completeGoal(pending.current.command);
+      pending.current = null;
+      await refresh();
+      onDone(`Nice! ${goal.name} is done and the purchase is recorded.`);
+    } catch (failure) { setError(failure instanceof ValidationError ? failure.message : 'Could not complete this goal. Try again.'); }
+    finally { inFlight.current = false; setBusy(false); }
+  }
+  return <View testID="goal-complete" style={{ gap: 14 }}>
+    <AppText size={16} weight="600">Record what you bought</AppText>
+    <AppText size={13} tone="secondary">{`The ${formatMoney(goal.savedMinor)} in this goal goes back to the wallet you pick, and the purchase is recorded there as an expense. Anything left over stays in that wallet.`}</AppText>
+    <View style={{ gap: 10 }}>
+      <AppText size={14} weight="500">Paid from</AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {wallets.map(item => <Chip key={item.id} label={item.name} selected={walletId === item.id} disabled={busy} onPress={() => setWalletId(item.id)} />)}
+      </View>
+    </View>
+    <View style={{ gap: 10 }}>
+      <AppText size={14} weight="500">Category</AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {categories.map(item => <Chip key={item.id} label={item.name} icon={item.iconKey as IconName} selected={categoryId === item.id} disabled={busy} onPress={() => setCategoryId(item.id)} />)}
+      </View>
+    </View>
+    <FormField label="Amount spent (PHP)" placeholder="0.00" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" editable={!busy} />
+    <DateField label="Date" value={localDate} onChange={setLocalDate} max={today} disabled={busy} />
+    <FormField label="Note" value={note} onChangeText={setNote} maxLength={500} editable={!busy} />
+    {error ? <Feedback error>{error}</Feedback> : null}
+    <Button label="Complete goal" icon="check" busy={busy} disabled={Boolean(storageError) || !walletId || !categoryId} onPress={() => { void submit(); }} />
+    <Button label="Cancel" variant="quiet" disabled={busy} onPress={onCancel} />
+    <View style={{ height: 1, backgroundColor: colors.border }} />
+  </View>;
+}
+
 function GoalPage({ goal, saved }: { goal: Goal; saved?: string }) {
   const { service, overview, refresh, error: storageError } = useTracker();
   const { colors } = useTheme();
   const refreshControl = usePullToRefresh();
   const [history, setHistory] = useState<GoalContribution[]>([]);
-  const [mode, setMode] = useState<'view' | 'add' | 'take'>('view');
+  const [mode, setMode] = useState<'view' | 'add' | 'take' | 'complete'>('view');
   const [message, setMessage] = useState<string | null>(null);
   const [removing, setRemoving] = useState<GoalContribution | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -124,7 +179,7 @@ function GoalPage({ goal, saved }: { goal: Goal; saved?: string }) {
         {showPhoto ? null : <GoalBadge goal={goal} size={48} />}
         <View style={{ flex: 1, gap: 2 }}>
           <AppText accessibilityRole="header" size={26} weight="600">{goal.name}</AppText>
-          {archived ? <AppText size={12} tone="secondary">Archived</AppText> : null}
+          {goal.completedAt ? <AppText size={12} tone="success">{`Completed ${displayDate(goal.completedAt.slice(0, 10))}`}</AppText> : archived ? <AppText size={12} tone="secondary">Archived</AppText> : null}
         </View>
       </View>
       {goal.description ? <AppText size={15} tone="secondary">{goal.description}</AppText> : null}
@@ -133,7 +188,13 @@ function GoalPage({ goal, saved }: { goal: Goal; saved?: string }) {
       <Surface style={{ gap: 16 }}>
         <View style={{ gap: 4 }}><AppText size={14} tone="secondary">Saved</AppText><MoneyText value={goal.savedMinor} size={32} fit /></View>
         <GoalProgress goal={goal} />
-        {mode !== 'view' ? <MoveMoney goal={goal} takeOut={mode === 'take'} onCancel={() => setMode('view')} onDone={text => { setMode('view'); setMessage(text); }} />
+        {mode === 'view' && !archived && goal.savedMinor >= goal.targetMinor ? <View testID="goal-reached" style={{ gap: 8, padding: 14, borderRadius: 14, backgroundColor: colors.muted }}>
+          <AppText size={15} weight="600">You reached this goal!</AppText>
+          <AppText size={13} tone="secondary">Bought it? Record the purchase and mark the goal done.</AppText>
+          <Button label="I bought it" icon="check" disabled={disabled} onPress={() => { setMessage(null); setMode('complete'); }} />
+        </View> : null}
+        {mode === 'complete' ? <CompleteGoal goal={goal} onCancel={() => setMode('view')} onDone={text => { setMode('view'); setMessage(text); }} />
+          : mode !== 'view' ? <MoveMoney goal={goal} takeOut={mode === 'take'} onCancel={() => setMode('view')} onDone={text => { setMode('view'); setMessage(text); }} />
           : <View style={{ flexDirection: 'row', gap: 8 }}>
             {!archived ? <View style={{ flex: 1 }}><Button label="Add money" icon="income" disabled={disabled} onPress={() => { setMessage(null); setMode('add'); }} /></View> : null}
             <View style={{ flex: 1 }}><Button label="Take out" icon="expense" variant="secondary" disabled={disabled || goal.savedMinor <= 0} onPress={() => { setMessage(null); setMode('take'); }} /></View>
@@ -156,8 +217,8 @@ function GoalPage({ goal, saved }: { goal: Goal; saved?: string }) {
       </Surface>
       {error && !removing && !confirmDelete ? <Feedback error>{error}</Feedback> : null}
       <View style={{ gap: 4 }}>
-        <Button label={archived ? 'Restore goal' : 'Archive goal'} icon={archived ? 'restore' : 'archive'} variant="quiet" disabled={disabled}
-          onPress={() => { void run(() => service!.repository.setGoalArchived(goal.id, !archived), () => setMessage(archived ? 'Goal restored.' : 'Goal archived.')); }} />
+        <Button label={goal.completedAt ? 'Reopen goal' : archived ? 'Restore goal' : 'Archive goal'} icon={archived ? 'restore' : 'archive'} variant="quiet" disabled={disabled}
+          onPress={() => { void run(() => service!.repository.setGoalArchived(goal.id, !archived), () => setMessage(goal.completedAt ? 'Goal reopened.' : archived ? 'Goal restored.' : 'Goal archived.')); }} />
         {goal.hasWalletMoves ? <AppText size={12} tone="secondary" style={{ textAlign: 'center' }}>This goal has wallet history, so it can be archived but not deleted.</AppText>
           : <Button label="Delete goal" icon="delete" variant="quiet" danger disabled={disabled} onPress={() => { setError(null); setConfirmDelete(true); }} />}
       </View>

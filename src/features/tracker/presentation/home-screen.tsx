@@ -15,9 +15,9 @@ import { BudgetProgress, type PlanTab } from './plan-screen';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
-const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports'; tab?: PlanTab }[] = [
+const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports' | '/debts'; tab?: PlanTab }[] = [
   { label: 'Transfer', icon: 'transfer', href: '/transfer' /* opens as a sheet */ }, { label: 'Budgets', icon: 'budgets', href: '/plan', tab: 'budgets' },
-  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals', href: '/plan', tab: 'goals' }, { label: 'Debt', icon: 'debt' },
+  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals', href: '/plan', tab: 'goals' }, { label: 'Debt', icon: 'debt', href: '/debts' },
 ];
 
 export function HomeScreen() {
@@ -95,6 +95,6 @@ export function HomeScreen() {
       </Surface> : null}
     </View>}
   </ScrollView>
-    {overview.wallet || overview.archivedWallets.length ? <FloatingStreak /> : null}
+    {overview.wallet || overview.archivedWallets.length ? <FloatingStreak streak={overview.streak} /> : null}
   </View>;
 }

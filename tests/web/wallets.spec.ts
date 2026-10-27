@@ -1,11 +1,10 @@
-import { expect, test } from './fixtures';
+import { expect, test, startWithCash } from './fixtures';
 
 test('Accounts creates wallets, selects expense account and preserves totals after reload', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('100');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '100');
   await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await expect(page.getByTestId('forest-scene')).toBeVisible();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
@@ -38,8 +37,7 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('100');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '100');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await page.getByRole('link', { name: 'Manage Cash', exact: true }).click();
   await expect(page.getByLabel('Wallet name', { exact: true })).toHaveCount(0);
@@ -57,7 +55,7 @@ test('wallet rename, archive cancellation, all-archived recovery and restore pre
   await page.screenshot({ path: testInfo.outputPath('archive-confirmation.png'), fullPage: true });
   await page.getByRole('button', { name: 'Confirm archive', exact: true }).click();
   await expect(page.getByText('Archived wallets', { exact: true })).toBeVisible();
-  await expect(page.getByText('Start with one wallet.')).toHaveCount(0);
+  await expect(page.getByTestId('wallet-setup-pending')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add transaction', exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'Home', exact: true }).click();
   await expect(page.getByText('Payments due', { exact: true })).toBeVisible();
@@ -77,7 +75,7 @@ test('provider presets keep editable wallet names and use existing wallet kinds'
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page);
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   for (const [provider, kind] of [['GCash', 'E-wallet'], ['Maya', 'E-wallet'], ['BPI', 'Bank'], ['MariBank', 'Bank'], ['GoTyme', 'Bank']]) {
     await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
@@ -107,7 +105,7 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page);
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   for (const name of ['GCash', 'GCash 2']) {
     await page.getByRole('button', { name: 'Add wallet', exact: true }).click();

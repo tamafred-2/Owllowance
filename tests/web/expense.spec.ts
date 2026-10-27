@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Page, startWithCash } from './fixtures';
 
 async function expectBalance(page: Page, amount: string) {
   if (new URL(page.url()).pathname === '/expense' || new URL(page.url()).pathname === '/') {
@@ -16,10 +16,7 @@ test('expense entry persists across reload, offline reopening and responsive the
   expect(response?.headers()['cross-origin-opener-policy']).toBe('same-origin');
   expect(response?.headers()['cross-origin-embedder-policy']).toBe('require-corp');
   expect(await page.evaluate(() => crossOriginIsolated)).toBe(true);
-  await expect(page.getByText('Start with one wallet.')).toBeVisible();
-  await page.getByRole('textbox', { name: 'Wallet name', exact: true }).fill('Test cash');
-  await page.getByRole('textbox', { name: 'Opening balance (PHP)', exact: true }).fill('1000');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '1000'); // First run starts with Cash; its starting balance is not income.
   await expectBalance(page, '₱1,000.00');
   await expect(page.getByText('₱0.00', { exact: true })).toHaveCount(3);
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
@@ -68,7 +65,7 @@ test('expense entry persists across reload, offline reopening and responsive the
 
 test('a second tab is blocked safely and can take over after the first closes', async ({ page, context }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Skip — start with Cash at ₱0.00', exact: true }).click();
+  await startWithCash(page);
   await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   const second = await context.newPage();
   await second.goto('/');
@@ -88,22 +85,21 @@ test('denied browser storage shows recovery without an ephemeral wallet', async 
   });
   await page.goto('/');
   await expect(page.getByText('Local storage could not be opened. Check browser storage permissions and free space, then retry.')).toBeVisible();
-  await expect(page.getByText('Start with one wallet.')).toHaveCount(0);
+  await expect(page.getByTestId('wallet-setup-pending')).toHaveCount(0);
   await page.getByRole('button', { name: 'Retry local storage', exact: true }).click();
   await expect(page.getByText('Local storage could not be opened. Check browser storage permissions and free space, then retry.')).toBeVisible();
 });
 
 test('browser data removal returns to honest empty setup', async ({ page, context }) => {
   await page.goto('/');
-  await page.getByRole('textbox', { name: 'Opening balance (PHP)', exact: true }).fill('10');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '10');
   await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   const session = await context.newCDPSession(page);
   await session.send('Storage.clearDataForOrigin', { origin: 'http://localhost:4173', storageTypes: 'all' });
   await page.close();
   const fresh = await context.newPage();
   await fresh.goto('/');
-  await expect(fresh.getByText('Start with one wallet.')).toBeVisible();
+  await expect(fresh.getByRole('heading', { name: 'Home', exact: true })).toBeVisible(); // A fresh Cash wallet, nothing old.
   await expect(fresh.getByText('₱10.00', { exact: true })).toHaveCount(0);
 });
 
@@ -123,8 +119,7 @@ test('a mid-save storage failure preserves input and retry posts one expense', a
     };
   });
   await page.goto('/');
-  await page.getByRole('textbox', { name: 'Opening balance (PHP)', exact: true }).fill('100');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '100');
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
   await page.getByRole('textbox', { name: 'Amount (PHP)', exact: true }).fill('25.50');
   await page.getByRole('radio', { name: 'Transport', exact: true }).click();

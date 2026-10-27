@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+const titles = ['Welcome to Owllowance', 'Your wallets', 'Add with the owl', 'Plan ahead', 'Look back and keep it safe'];
+
 // Uses plain Playwright: the shared fixture skips the guide everywhere else.
 test('first-run guide walks through the main features once and reopens from Settings', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await page.goto('/'); // First run creates Cash at ₱0.00 and opens the guide.
   const guide = page.getByTestId('getting-started');
   await expect(guide).toBeVisible();
   await expect(guide.getByText('Welcome to Owllowance', { exact: true })).toBeVisible();
@@ -13,8 +14,9 @@ test('first-run guide walks through the main features once and reopens from Sett
   for (let step = 2; step <= 5; step++) {
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     // The card for this step has slid fully into view.
-    await expect.poll(async () => (await guide.getByText(`STEP ${step} OF 5`, { exact: true }).boundingBox())?.x ?? -1).toBeGreaterThanOrEqual(0);
-    await expect.poll(async () => (await guide.getByText(`STEP ${step} OF 5`, { exact: true }).boundingBox())?.x ?? 999).toBeLessThan(100);
+    const title = guide.getByText(titles[step - 1], { exact: true });
+    await expect.poll(async () => (await title.boundingBox())?.x ?? -1).toBeGreaterThanOrEqual(0);
+    await expect.poll(async () => (await title.boundingBox())?.x ?? 999).toBeLessThan(100);
   }
   await page.screenshot({ path: testInfo.outputPath('guide-5.png') });
   await page.getByRole('button', { name: 'Get started', exact: true }).click();

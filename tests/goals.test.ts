@@ -92,7 +92,7 @@ test('backups carry goals and their wallet movements; older backups still restor
   await f.move(25_000);
   f.legacy(5_000);
   const backup = JSON.parse(JSON.stringify(await f.repository.exportBackup('test')));
-  assert.equal(backup.schemaVersion, 7);
+  assert.equal(backup.schemaVersion, 8);
   const target = await fixture(); t.after(() => target.connection.sqlite.close());
   await target.repository.restoreBackup(backup);
   const restored = await target.repository.overview();
@@ -125,16 +125,16 @@ test('backups carry goals and their wallet movements; older backups still restor
 test('upgrading from version 6 keeps goals and their saved amounts', async t => {
   const f = await fixture(); t.after(() => f.connection.sqlite.close());
   const goalId = randomUUID();
-  f.connection.sqlite.exec(`DROP TABLE goal_contributions; DROP TABLE goals;
+  f.connection.sqlite.exec(`DROP TABLE debt_entries; DROP TABLE debts; DROP TABLE goal_contributions; DROP TABLE goals;
     CREATE TABLE goals (id TEXT PRIMARY KEY NOT NULL, profile_id TEXT NOT NULL REFERENCES profiles(id), name TEXT NOT NULL, target_minor INTEGER NOT NULL,
       target_date TEXT, icon_key TEXT NOT NULL, color_token TEXT NOT NULL, archived_at TEXT);
     CREATE TABLE goal_contributions (id TEXT PRIMARY KEY NOT NULL, goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
       amount_minor INTEGER NOT NULL, local_date TEXT NOT NULL, note TEXT NOT NULL);
     INSERT INTO goals SELECT '${goalId}', id, 'Trip', 500000, NULL, 'travel', 'teal', NULL FROM profiles;
     INSERT INTO goal_contributions VALUES ('${randomUUID()}', '${goalId}', 120000, '2026-09-01', '');
-    DELETE FROM schema_migrations WHERE version = 7; PRAGMA user_version = 6;`);
+    DELETE FROM schema_migrations WHERE version >= 7; PRAGMA user_version = 6;`);
   await f.repository.initialize();
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 7);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 8);
   const goal = (await f.repository.overview()).goals[0];
   assert.deepEqual([goal.name, goal.savedMinor, goal.description, goal.imageUri, goal.hasWalletMoves], ['Trip', 120_000, '', null, false]);
 });

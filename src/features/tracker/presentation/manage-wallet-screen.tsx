@@ -1,5 +1,6 @@
 import { WalletHistory } from './wallet-history';
 import { RenameWalletModal } from './rename-wallet-modal';
+import { StartingBalanceModal } from './starting-balance-modal';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -16,6 +17,7 @@ import { BalanceEye, useBalanceHidden } from './balance-eye';
 function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
   const { overview, error: storageError } = useTracker();
   const [renaming, setRenaming] = useState(false);
+  const [settingStart, setSettingStart] = useState(false);
   const hidden = useBalanceHidden(wallet.id);
   const refreshControl = usePullToRefresh();
   const openSheet = useOpenSheet();
@@ -36,9 +38,11 @@ function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
         <View style={{ gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={14} tone="secondary">{wallet.archivedAt ? 'Archived balance' : 'Current balance'}</AppText><BalanceEye target={wallet.id} /></View><MoneyText value={wallet.balanceMinor} size={32} fit hidden={hidden} /></View>
         {!wallet.archivedAt ? <Button label="Add money" disabled={disabled} onPress={() => openSheet({ kind: 'entry', mode: 'income', walletId: wallet.id })} /> : null}
         {!wallet.archivedAt && (overview?.wallets.length ?? 0) > 1 ? <Button label="Transfer" icon="transfer" variant="secondary" disabled={disabled} onPress={() => openSheet({ kind: 'transfer', walletId: wallet.id })} /> : null}
+        {!wallet.archivedAt ? <Button label="Edit starting balance" icon="edit" variant="quiet" disabled={disabled} onPress={() => setSettingStart(true)} /> : null}
       </Surface>
       <WalletHistory walletId={wallet.id} />
       {renaming ? <RenameWalletModal wallet={wallet} onClose={() => setRenaming(false)} /> : null}
+      {settingStart ? <StartingBalanceModal wallet={wallet} onClose={() => setSettingStart(false)} /> : null}
     </View>
   </ScrollView>;
 }

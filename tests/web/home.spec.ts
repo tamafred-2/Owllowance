@@ -1,11 +1,10 @@
-import { expect, test } from './fixtures';
+import { expect, test, startWithCash } from './fixtures';
 
 test('Home shows honest placeholders, daily cash flow and responsive navigation', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('1000');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '1000');
   await expect(page.getByTestId('forest-scene')).toBeVisible();
   const streak = page.getByTestId('floating-streak');
   const before = (await streak.boundingBox())!;
@@ -19,6 +18,11 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await page.mouse.move(before.x - 76, before.y - 56, { steps: 10 });
   await page.mouse.up();
   const after = (await streak.boundingBox())!;
+  // A tap (not a drag) opens the streak.
+  await streak.click();
+  await expect(page.getByTestId('streak-details')).toContainText('0 days');
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+  await expect(page.getByTestId('streak-details')).toHaveCount(0);
   expect(before.x - after.x).toBeGreaterThan(90);
   expect(before.y - after.y).toBeGreaterThan(70);
   await page.mouse.move(after.x + 24, after.y + 24);
@@ -35,10 +39,7 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await expect(navigation.getByText('Add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Total balance', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Recent activity', { exact: true })).toHaveCount(0);
-  for (const label of ['Debt']) {
-    await expect(page.getByRole('button', { name: `${label}, coming soon`, exact: true })).toBeDisabled();
-  }
-  for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights', 'Goals']) {
+  for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights', 'Goals', 'Debt']) {
     await expect(page.getByRole('link', { name: label, exact: true }).first()).toBeEnabled();
   }
   await expect(page.getByTestId('today-net')).toContainText('₱0.00');

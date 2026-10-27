@@ -11,3 +11,18 @@ export const test = base.extend({
 });
 export { expect };
 export type { Page } from '@playwright/test';
+
+// First run creates a Cash wallet at ₱0.00; optionally set what it starts with, then return Home.
+export async function startWithCash(page: import('@playwright/test').Page, startingBalance?: string) {
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
+  if (!startingBalance) return;
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await page.getByRole('link', { name: 'Manage Cash', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit starting balance', exact: true }).click();
+  await page.getByLabel('Starting balance (PHP)', { exact: true }).fill(startingBalance);
+  await page.getByRole('button', { name: 'Save starting balance', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Starting balance', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back to Wallet', exact: true }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
+}

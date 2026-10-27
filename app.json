@@ -39,6 +39,12 @@
       "./plugins/with-native-loading.cjs",
       "expo-sharing",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Owllowance uses Face ID to unlock the app when App lock is on."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Owllowance uses a photo only when you choose one for a goal.",

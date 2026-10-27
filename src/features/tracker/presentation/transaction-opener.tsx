@@ -59,6 +59,7 @@ export function useTransactionOpener(origin: Origin, walletId?: string) {
   const openSheet = useOpenSheet();
   const open = (item: ActivityItem) => {
     if (item.goalId) { router.push({ pathname: '/goal', params: { id: item.goalId } }); return; }
+    if (item.debtId) { router.push({ pathname: '/debt', params: { id: item.debtId } }); return; }
     if (item.type === 'transfer' || item.linkedId) { setTransferId(item.linkedId ?? item.id); return; }
     if (item.type === 'opening') return;
     openSheet({ kind: 'entry', edit: item.id });

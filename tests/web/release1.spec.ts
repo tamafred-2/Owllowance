@@ -1,12 +1,11 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test, type Page, startWithCash } from './fixtures';
 import { readFileSync } from 'node:fs';
 
 async function setup(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('1000');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '1000');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await page.getByLabel('Wallet name', { exact: true }).fill('Savings');
@@ -191,6 +190,7 @@ test('backup export then restore replaces data and can be undone', async ({ page
   await page.getByRole('link', { name: 'Settings', exact: true }).first().click();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Export without password', exact: true }).click();
   const download = await downloadPromise;
   const backup = readFileSync(await download.path(), 'utf8');
   expect(JSON.parse(backup).format).toBe('owllowance-backup');
@@ -219,6 +219,29 @@ test('backup export then restore replaces data and can be undone', async ({ page
   await page.getByRole('button', { name: 'Restore from backup', exact: true }).click();
   await (await bad).setFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"other"}') });
   await expect(page.getByText(/not an Owllowance backup/)).toBeVisible();
+
+  // Password-protected: the file hides its contents and opens only with the right password.
+  const protectedDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup', exact: true }).click();
+  await page.getByLabel('Password', { exact: true }).fill('owl-secret-1');
+  await page.getByLabel('Confirm password', { exact: true }).fill('owl-secret-2');
+  await page.getByRole('button', { name: 'Export with password', exact: true }).click();
+  await expect(page.getByText('The passwords do not match.', { exact: true })).toBeVisible();
+  await page.getByLabel('Confirm password', { exact: true }).fill('owl-secret-1');
+  await page.getByRole('button', { name: 'Export with password', exact: true }).click();
+  const sealed = readFileSync(await (await protectedDownload).path(), 'utf8');
+  expect(JSON.parse(sealed).format).toBe('owllowance-backup-encrypted');
+  expect(sealed).not.toContain('Savings');
+  const lockedChooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Restore from backup', exact: true }).click();
+  await (await lockedChooser).setFiles({ name: 'protected.json', mimeType: 'application/json', buffer: Buffer.from(sealed) });
+  await page.getByLabel('Password', { exact: true }).fill('wrong-password');
+  await page.getByRole('button', { name: 'Open backup', exact: true }).click();
+  await expect(page.getByText('That password is not right, or the file is damaged.', { exact: true })).toBeVisible();
+  await page.getByLabel('Password', { exact: true }).fill('owl-secret-1');
+  await page.getByRole('button', { name: 'Open backup', exact: true }).click();
+  await expect(page.getByTestId('restore-preview')).toContainText('2 wallets');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).last().click();
 });
 
 test('wallet list, grid and swipeable card views; choice is remembered', async ({ page }, testInfo) => {
@@ -369,4 +392,57 @@ test('savings goal has its own page and moves money with the chosen wallets', as
   await expect(page.getByText('Cash → New phone', { exact: true })).toBeVisible();
   await page.getByText('New phone → Savings', { exact: true }).click();
   await expect(page).toHaveURL(/\/goal\?/);
+});
+
+test('a reached goal can be completed: its money returns to a wallet and the purchase is spending', async ({ page }) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Goals', exact: true }).click();
+  await page.getByRole('button', { name: 'Add goal', exact: true }).click();
+  await page.getByLabel('Goal name', { exact: true }).fill('Headphones');
+  await page.getByLabel('Target (PHP)', { exact: true }).fill('300');
+  await page.getByRole('button', { name: 'Save goal', exact: true }).click();
+  await page.getByRole('button', { name: 'Add money', exact: true }).click();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
+  await page.getByRole('button', { name: 'Add to goal', exact: true }).click();
+  await expect(page.getByTestId('goal-reached')).toBeVisible();
+  await page.getByRole('button', { name: 'I bought it', exact: true }).click();
+  const form = page.getByTestId('goal-complete');
+  await form.getByRole('button', { name: 'Savings', exact: true }).click();
+  await form.getByRole('button', { name: 'Shopping', exact: true }).click();
+  await page.getByLabel('Amount spent (PHP)', { exact: true }).fill('250');
+  await page.getByRole('button', { name: 'Complete goal', exact: true }).click();
+  await expect(page.getByText('Nice! Headphones is done and the purchase is recorded.', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Completed /)).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Plan', exact: true }).click();
+  await expect(page.getByTestId('goal-list')).toContainText('Completed');
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('700.00');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('250.00'); // ₱50 left over.
+});
+
+test('debts move wallet money, keep net worth, and show what is left after debts', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Debt', exact: true }).click();
+  await page.getByRole('button', { name: 'Add debt', exact: true }).click();
+  await page.getByLabel('Who do you owe?', { exact: true }).fill('Ana');
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('500');
+  await page.getByRole('button', { name: 'Save debt', exact: true }).click();
+  await expect(page.getByText('Debt saved.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Pay back', exact: true }).click();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('200');
+  await page.getByRole('button', { name: 'Save: Paid back', exact: true }).click();
+  await expect(page.getByText('Paid back: ₱200.00.', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('debt-history')).toContainText('Borrowed · Cash');
+  await page.screenshot({ path: testInfo.outputPath('debt-page.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Back to Debts', exact: true }).click();
+  await expect(page.getByTestId('debts-owe')).toContainText('₱300.00');
+  await expect(page.getByTestId('after-debts')).toContainText('₱1,200.00'); // ₱1,500 in wallets minus ₱300 owed.
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,300.00');
+  await expect(page.getByText('After debts', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await expect(page.getByText('Borrowed from Ana · Cash', { exact: true })).toBeVisible();
+  await expect(page.getByText('Paid back to Ana · Cash', { exact: true })).toBeVisible();
 });

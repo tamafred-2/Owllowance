@@ -1,11 +1,10 @@
-import { expect, test } from './fixtures';
+import { expect, test, startWithCash } from './fixtures';
 
 test('income and expense tabs retain drafts and post to the selected wallet offline', async ({ page, context }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByLabel('Opening balance (PHP)', { exact: true }).fill('100');
-  await page.getByRole('button', { name: 'Create wallet', exact: true }).click();
+  await startWithCash(page, '100');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await page.getByRole('radio', { name: 'Bank', exact: true }).click();

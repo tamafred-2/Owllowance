@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures';
+import { expect, test, startWithCash } from './fixtures';
 
 test('ready data waits for the opening GIF to load and finish', async ({ page }) => {
   let release!: () => void;
@@ -7,10 +7,10 @@ test('ready data waits for the opening GIF to load and finish', async ({ page })
   await page.goto('/');
   await expect(page.getByTestId('opening-motion')).toBeVisible();
   await expect(page.getByTestId('opening-spinner')).toBeVisible();
-  await expect(page.getByText('Start with one wallet.')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toHaveCount(0);
   const releasedAt = Date.now();
   release();
-  await expect(page.getByText('Start with one wallet.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   expect(Date.now() - releasedAt).toBeGreaterThanOrEqual(2350);
 });
 
@@ -30,7 +30,7 @@ test('opening artwork follows real startup and reduced motion', async ({ page, c
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.getByTestId('opening-still').locator('img')).toHaveAttribute('src', /logo-awake.*\.png/);
   await page.evaluate(() => { (globalThis as typeof globalThis & { finishStartup?: () => void }).finishStartup?.(); });
-  await expect(page.getByText('Start with one wallet.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
   await expect(page.getByTestId('app-opening')).toHaveCount(0);
 });
 
@@ -40,7 +40,7 @@ test('forest owl reacts, returns to idle, and stays static with reduced motion',
   // Choose local art time with a ticking clock so transitions can finish.
   await page.clock.install({ time: new Date('2026-10-15T10:00:00') });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Skip — start with Cash at ₱0.00', exact: true }).click();
+  await startWithCash(page);
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await expect(page.getByTestId('forest-scene')).toBeVisible();
   await expect(page.getByTestId('forest-forenoon').locator('img')).toHaveJSProperty('complete', true);
