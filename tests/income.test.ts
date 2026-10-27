@@ -87,7 +87,7 @@ test('real v2 upgrade rolls back dropped tables on failure and preserves history
   connection.sqlite.prepare('INSERT INTO transactions (id,profile_id,type,occurred_at,local_date,time_zone,offset_minutes,note,category_id) VALUES (?,?,?,?,?,?,?,?,?)').run(expenseId,profile,'expense',time.occurredAt,time.localDate,time.timeZone,time.offsetMinutes,'Existing meal',categoryId);
   connection.sqlite.prepare('INSERT INTO entries VALUES (?,?,?,?,?)').run(expenseId,expenseId,profile,setup.walletId,-1250);
   const oldHistory = await repositoryHistory();
-  async function repositoryHistory() { return connection.sqlite.prepare('SELECT * FROM transactions ORDER BY id').all(); }
+  async function repositoryHistory() { return connection.sqlite.prepare('SELECT id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id, revision FROM transactions ORDER BY id').all(); }
   const repository = new SqlLedgerRepository(new Database(connection));
   connection.failIncomeMigration = true;
   await assert.rejects(repository.initialize(), /Injected income migration/);
@@ -104,5 +104,5 @@ test('real v2 upgrade rolls back dropped tables on failure and preserves history
   assert.equal((await repository.history(0,10)).filter(item => item.type === 'opening').length, 1);
   assert.deepEqual(connection.sqlite.prepare('PRAGMA foreign_key_check').all(), []);
   assert.equal(connection.sqlite.prepare('PRAGMA foreign_keys').get()?.foreign_keys, 1);
-  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 3);
+  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 4);
 });

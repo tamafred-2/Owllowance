@@ -8,7 +8,74 @@ export async function seedIncomeCategories(sql: SqlConnection): Promise<void> {
   }
 }
 
-export const SCHEMA_VERSION = 3;
+export async function seedFeeCategory(sql: SqlConnection): Promise<void> {
+  await sql.runAsync("INSERT OR IGNORE INTO categories (id, profile_id, type, name, icon_key, color_token) SELECT ?, id, 'expense', 'Fees', 'fees', 'slate' FROM profiles", FEE_CATEGORY);
+}
+
+export const FEE_CATEGORY = '00000000-0000-4000-8000-000000000106';
+export const SCHEMA_VERSION = 4;
+// v4: transfers carry two entries, linked fee expenses, budgets and preferences.
+const ledgerSchema = `
+CREATE TABLE transactions (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  type TEXT NOT NULL CHECK (type IN ('expense','income','opening','transfer')),
+  occurred_at TEXT NOT NULL,
+  local_date TEXT NOT NULL CHECK (length(local_date) = 10),
+  time_zone TEXT NOT NULL,
+  offset_minutes INTEGER NOT NULL CHECK (offset_minutes BETWEEN -840 AND 840),
+  note TEXT NOT NULL CHECK (length(note) <= 500),
+  category_id TEXT,
+  revision INTEGER NOT NULL DEFAULT 1 CHECK (revision > 0),
+  linked_id TEXT REFERENCES transactions(id),
+  FOREIGN KEY (category_id, profile_id) REFERENCES categories(id, profile_id),
+  CHECK ((type IN ('expense','income') AND category_id IS NOT NULL) OR (type IN ('opening','transfer') AND category_id IS NULL)),
+  CHECK (linked_id IS NULL OR type = 'expense'),
+  UNIQUE (id, profile_id)
+);
+CREATE TABLE entries (
+  id TEXT PRIMARY KEY NOT NULL,
+  transaction_id TEXT NOT NULL,
+  profile_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND abs(amount_minor) <= ${MAX_MINOR}),
+  FOREIGN KEY (transaction_id, profile_id) REFERENCES transactions(id, profile_id),
+  FOREIGN KEY (account_id, profile_id) REFERENCES accounts(id, profile_id)
+);
+`;
+const entrySignCheck = `SELECT CASE WHEN
+    ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'expense' AND NEW.amount_minor >= 0)
+    OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'income' AND NEW.amount_minor <= 0)
+    OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'opening' AND NEW.amount_minor < 0)
+    OR ((SELECT type FROM transactions WHERE id = NEW.transaction_id) = 'transfer' AND NEW.amount_minor = 0)
+    THEN RAISE(ABORT, 'invalid entry sign') END;`;
+const categoryCheck = `SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM categories WHERE id = NEW.category_id AND profile_id = NEW.profile_id AND type = NEW.type)
+    THEN RAISE(ABORT, 'invalid category type') END;`;
+const v4Objects = `
+CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN ${entrySignCheck} END;
+CREATE TRIGGER validate_entry_update BEFORE UPDATE ON entries BEGIN ${entrySignCheck} END;
+CREATE TRIGGER validate_transaction_category BEFORE INSERT ON transactions WHEN NEW.type IN ('expense','income') BEGIN ${categoryCheck} END;
+CREATE TRIGGER validate_transaction_category_update BEFORE UPDATE ON transactions WHEN NEW.type IN ('expense','income') BEGIN ${categoryCheck} END;
+CREATE INDEX entries_account ON entries(account_id);
+CREATE INDEX entries_transaction ON entries(transaction_id);
+CREATE INDEX transactions_date ON transactions(local_date DESC, occurred_at DESC, id DESC);
+CREATE INDEX transactions_category_date ON transactions(category_id, local_date);
+CREATE INDEX transactions_linked ON transactions(linked_id);
+CREATE TABLE budgets (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  category_id TEXT NOT NULL UNIQUE,
+  period TEXT NOT NULL CHECK (period IN ('monthly','weekly','custom')),
+  start_date TEXT,
+  end_date TEXT,
+  limit_minor INTEGER NOT NULL CHECK (typeof(limit_minor) = 'integer' AND limit_minor > 0 AND limit_minor <= ${MAX_MINOR}),
+  FOREIGN KEY (category_id, profile_id) REFERENCES categories(id, profile_id),
+  CHECK ((period = 'custom' AND length(start_date) = 10 AND length(end_date) = 10 AND end_date > start_date)
+    OR (period <> 'custom' AND start_date IS NULL AND end_date IS NULL))
+);
+CREATE TABLE settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL CHECK (length(value) <= 100));
+CREATE TABLE restore_snapshots (id INTEGER PRIMARY KEY CHECK (id = 1), created_at TEXT NOT NULL, payload TEXT NOT NULL);
+`;
 const schema = `
 CREATE TABLE profiles (
   id TEXT PRIMARY KEY NOT NULL CHECK (id = '00000000-0000-4000-8000-000000000001'),
@@ -104,7 +171,8 @@ export async function migrate(database: Database): Promise<void> {
       await sql.execAsync(incomeSchema);
       await sql.execAsync(`
         INSERT INTO categories SELECT * FROM saved_categories;
-        INSERT INTO transactions SELECT * FROM saved_transactions;
+        INSERT INTO transactions (id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id, revision)
+          SELECT id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id, revision FROM saved_transactions;
         INSERT INTO entries SELECT * FROM saved_entries;
         DROP TABLE saved_entries;
         DROP TABLE saved_transactions;
@@ -119,6 +187,27 @@ export async function migrate(database: Database): Promise<void> {
       if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
       await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 3, new Date().toISOString());
       await sql.execAsync('PRAGMA user_version = 3');
+    }
+    if (version < 4) {
+      await sql.execAsync(`
+        CREATE TEMP TABLE saved_transactions AS SELECT * FROM transactions ORDER BY rowid;
+        CREATE TEMP TABLE saved_entries AS SELECT * FROM entries ORDER BY rowid;
+        DROP TABLE entries;
+        DROP TABLE transactions;
+      `);
+      await sql.execAsync(ledgerSchema);
+      await sql.execAsync(`
+        INSERT INTO transactions (id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id, revision)
+          SELECT id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id, revision FROM saved_transactions;
+        INSERT INTO entries SELECT * FROM saved_entries;
+        DROP TABLE saved_entries;
+        DROP TABLE saved_transactions;
+      `);
+      await sql.execAsync(v4Objects);
+      await seedFeeCategory(sql);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 4, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 4');
     }
   });
 }

@@ -42,7 +42,7 @@ test('v1 upgrade preserves existing records and rolls back interrupted metadata 
   const f = await fixture(); t.after(() => f.connection.sqlite.close());
   await f.repository.addExpense(f.expense(123));
   // Reconstruct the exact prior accounts schema; financial rows stay untouched.
-  f.connection.sqlite.exec('ALTER TABLE accounts DROP COLUMN opening_name; DELETE FROM schema_migrations WHERE version >= 2; PRAGMA user_version = 1;');
+  f.connection.sqlite.exec('DROP TABLE budgets; DROP TABLE settings; DROP TABLE restore_snapshots; ALTER TABLE accounts DROP COLUMN opening_name; DELETE FROM schema_migrations WHERE version >= 2; PRAGMA user_version = 1;');
   f.connection.failUpgrade = true;
   await assert.rejects(f.repository.initialize(), /Injected upgrade/);
   assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 1);
@@ -52,7 +52,7 @@ test('v1 upgrade preserves existing records and rolls back interrupted metadata 
   await f.repository.renameWallet(f.setup.walletId, 'Renamed');
   await f.repository.createWallet(f.setup);
   assert.equal((await f.repository.overview()).wallets.length, 1);
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 3);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 4);
 });
 
 test('multiple wallet types preserve existing records and debit only the selected account', async t => {
@@ -71,7 +71,7 @@ test('multiple wallet types preserve existing records and debit only the selecte
   assert.equal(view.totalBalanceMinor, 348_766);
   assert.equal(view.spentMinor, 1234);
   assert.equal(view.todaySpentMinor, 1234);
-  assert.equal(view.categories.length, 6);
+  assert.equal(view.categories.length, 7);
   assert.equal(view.recent.find(item => item.id === spend.id)?.walletName, 'Bank');
   await assert.rejects(f.repository.createWallet({ ...bank, walletKind: 'cash' }), /different transaction/);
 });
@@ -173,14 +173,14 @@ test('migration failure rolls back DDL; retry and reinitialization preserve exis
   assert.equal(connection.sqlite.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table'").get()?.count, 0);
   await repository.initialize(); await repository.createWallet({ ...opening(), walletName: 'Second' }); await repository.initialize();
   assert.equal((await repository.overview()).wallet?.balanceMinor, 100_000);
-  assert.equal(connection.sqlite.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 3);
+  assert.equal(connection.sqlite.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 4);
 });
 
 test('newer schema is refused without resetting it', async t => {
   const connection = new TestConnection(); t.after(() => connection.sqlite.close());
-  connection.sqlite.exec('PRAGMA user_version = 4');
+  connection.sqlite.exec('PRAGMA user_version = 5');
   await assert.rejects(new SqlLedgerRepository(new Database(connection)).initialize(), /newer version/);
-  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 5);
 });
 
 test('reopening the database preserves balances, notes and stored historical dates', async () => {

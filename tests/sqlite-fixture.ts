@@ -11,6 +11,9 @@ export class TestConnection implements SqlConnection {
   failUpgrade = false;
   failIncomeMigration = false;
   failAccountUpdate = false;
+  failV4Migration = false;
+  // Fails the Nth entry insert from now (1-based); 0 disables.
+  failEntryAt = 0;
   constructor(filename = ':memory:') { this.sqlite = new DatabaseSync(filename); }
   async execAsync(sql: string) {
     if (this.failSchema && sql.includes('CREATE INDEX')) {
@@ -29,11 +32,19 @@ export class TestConnection implements SqlConnection {
       this.failIncomeMigration = false;
       throw new Error('Injected income migration failure');
     }
+    if (this.failV4Migration && sql.includes('CREATE TEMP TABLE saved_transactions') && !sql.includes('saved_categories')) {
+      this.sqlite.exec(sql);
+      this.failV4Migration = false;
+      throw new Error('Injected v4 migration failure');
+    }
     this.sqlite.exec(sql);
   }
   async runAsync(sql: string, ...params: SqlValue[]) {
     if (this.failNextEntry && sql.includes('INSERT INTO entries')) {
       this.failNextEntry = false;
+      throw new Error('Injected write failure');
+    }
+    if (this.failEntryAt && sql.includes('INSERT INTO entries') && --this.failEntryAt === 0) {
       throw new Error('Injected write failure');
     }
     if (this.failAccountUpdate && sql.startsWith('UPDATE accounts')) {
