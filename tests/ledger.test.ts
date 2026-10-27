@@ -52,7 +52,7 @@ test('v1 upgrade preserves existing records and rolls back interrupted metadata 
   await f.repository.renameWallet(f.setup.walletId, 'Renamed');
   await f.repository.createWallet(f.setup);
   assert.equal((await f.repository.overview()).wallets.length, 1);
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 6);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 7);
 });
 
 test('multiple wallet types preserve existing records and debit only the selected account', async t => {
@@ -173,14 +173,14 @@ test('migration failure rolls back DDL; retry and reinitialization preserve exis
   assert.equal(connection.sqlite.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table'").get()?.count, 0);
   await repository.initialize(); await repository.createWallet({ ...opening(), walletName: 'Second' }); await repository.initialize();
   assert.equal((await repository.overview()).wallet?.balanceMinor, 100_000);
-  assert.equal(connection.sqlite.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 6);
+  assert.equal(connection.sqlite.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 7);
 });
 
 test('newer schema is refused without resetting it', async t => {
   const connection = new TestConnection(); t.after(() => connection.sqlite.close());
-  connection.sqlite.exec('PRAGMA user_version = 7');
+  connection.sqlite.exec('PRAGMA user_version = 8');
   await assert.rejects(new SqlLedgerRepository(new Database(connection)).initialize(), /newer version/);
-  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 7);
+  assert.equal(connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 8);
 });
 
 test('reopening the database preserves balances, notes and stored historical dates', async () => {

@@ -302,6 +302,8 @@ test('entry forms open as a sheet over the current page and close back to it', a
 test('recurring bill set up on Plan shows on Home and Paid records it once', async ({ page }, testInfo) => {
   await setup(page);
   await page.getByRole('link', { name: 'Plan', exact: true }).click();
+  await page.getByRole('tab', { name: 'Recurring', exact: true }).click();
+  await expect(page).toHaveURL(/tab=recurring/);
   await page.getByRole('button', { name: 'Add recurring', exact: true }).click();
   await page.getByLabel('Name', { exact: true }).fill('Internet');
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('150');
@@ -330,26 +332,41 @@ test('recurring bill set up on Plan shows on Home and Paid records it once', asy
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('850.00');
 });
 
-test('savings goal tracks added and taken-out money without touching wallet balances', async ({ page }, testInfo) => {
+test('savings goal has its own page and moves money with the chosen wallets', async ({ page }, testInfo) => {
   await setup(page);
   await page.getByRole('link', { name: 'Home', exact: true }).click();
   await page.getByRole('link', { name: 'Goals', exact: true }).click();
   await page.getByRole('button', { name: 'Add goal', exact: true }).click();
+  await expect(page).toHaveURL(/goal-edit/);
   await page.getByLabel('Goal name', { exact: true }).fill('New phone');
+  await page.getByLabel('Description (optional)', { exact: true }).fill('For online classes');
   await page.getByLabel('Target (PHP)', { exact: true }).fill('15000');
   await page.getByRole('button', { name: 'Save goal', exact: true }).click();
-  await expect(page.getByTestId('goal-list')).toContainText('New phone');
-  await page.getByRole('button', { name: 'Open goal New phone', exact: true }).click();
+  await expect(page).toHaveURL(/\/goal\?/);
+  await expect(page.getByText('Goal saved.', { exact: true })).toBeVisible();
+  await expect(page.getByText('For online classes', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add money', exact: true }).click();
-  await page.getByLabel('Amount to add (PHP)', { exact: true }).fill('3000');
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
   await page.getByRole('button', { name: 'Add to goal', exact: true }).click();
+  await expect(page.getByText('₱300.00 moved from Cash.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Take out', exact: true }).click();
-  await page.getByLabel('Amount to take out (PHP)', { exact: true }).fill('500');
-  await page.getByRole('button', { name: 'Take out', exact: true }).last().click();
-  await expect(page.getByTestId('goal-history')).toContainText('₱3,000.00');
-  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
-  await expect(page.getByTestId('goal-list')).toContainText('₱2,500.00');
-  await page.screenshot({ path: testInfo.outputPath('goals.png'), fullPage: true });
+  await page.getByRole('radio', { name: 'Wallet: Savings', exact: true }).click();
+  await page.getByLabel('Amount (PHP)', { exact: true }).fill('100');
+  await page.getByRole('button', { name: 'Take out', exact: true }).click();
+  await expect(page.getByText('₱100.00 moved to Savings.', { exact: true })).toBeVisible();
+  const history = page.getByTestId('goal-history');
+  await expect(history).toContainText('From Cash');
+  await expect(history).toContainText('To Savings');
+  await expect(page.getByRole('button', { name: 'Delete goal', exact: true })).toHaveCount(0); // Has wallet history: archive only.
+  await page.screenshot({ path: testInfo.outputPath('goal-page.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Back to Plan', exact: true }).click();
+  await expect(page.getByTestId('goal-list')).toContainText('₱200.00');
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,000.00'); // Unchanged.
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('700.00');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('300.00');
+  await expect(page.getByText('₱1,200.00', { exact: true }).first()).toBeVisible(); // Net worth includes the goal.
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await expect(page.getByText('Cash → New phone', { exact: true })).toBeVisible();
+  await page.getByText('New phone → Savings', { exact: true }).click();
+  await expect(page).toHaveURL(/\/goal\?/);
 });

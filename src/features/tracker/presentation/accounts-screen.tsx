@@ -1,4 +1,4 @@
-import { AnchoredMenu, type MenuAnchor } from '../../../components/anchored-menu';
+import { AnchoredMenu, MenuItem, type MenuAnchor } from '../../../components/anchored-menu';
 import { AppModal } from '../../../components/app-modal';
 import { HeaderActions } from '../../../components/header-actions';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -130,11 +130,11 @@ export function AccountsScreen() {
         </View> : <View>{overview.archivedWallets.map(wallet => <WalletRow key={wallet.id} wallet={wallet} {...viewProps} />)}</View>}
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>
-        {!menuWallet.archivedAt ? <Button label="Add money" icon="income" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'entry', mode: 'income', walletId: id }); }} /> : null}
-        {!menuWallet.archivedAt && overview.wallets.length > 1 ? <Button label="Transfer" icon="transfer" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'transfer', walletId: id }); }} /> : null}
-        <Button label="Edit name" icon="edit" variant="quiet" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
-        <Button label="View history" icon="activity" variant="quiet" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
-        <Button label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} variant="quiet" danger={!menuWallet.archivedAt} disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />
+        {!menuWallet.archivedAt ? <MenuItem label="Add money" icon="income" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'entry', mode: 'income', walletId: id }); }} /> : null}
+        {!menuWallet.archivedAt && overview.wallets.length > 1 ? <MenuItem label="Transfer" icon="transfer" disabled={busy || Boolean(storageError)} onPress={() => { const id = menuWallet.id; setMenuWallet(null); openSheet({ kind: 'transfer', walletId: id }); }} /> : null}
+        <MenuItem label="Edit name" icon="edit" disabled={busy || Boolean(storageError)} onPress={() => { setRenameWallet(menuWallet); setMenuWallet(null); }} />
+        <MenuItem label="View history" icon="activity" disabled={busy} onPress={() => { const id = menuWallet.id; setMenuWallet(null); router.push({ pathname: '/wallet-manage', params: { id } }); }} />
+        <MenuItem label={menuWallet.archivedAt ? 'Restore wallet' : 'Archive wallet'} icon={menuWallet.archivedAt ? 'restore' : 'archive'} danger={!menuWallet.archivedAt} disabled={busy || Boolean(storageError)} onPress={() => { if (menuWallet.archivedAt) void changeArchive(); else setConfirmArchive(true); }} />
         {menuError ? <Feedback error>{menuError}</Feedback> : null}
       </AnchoredMenu> : null}
       {renameWallet ? <RenameWalletModal wallet={renameWallet} onClose={() => setRenameWallet(null)} /> : null}

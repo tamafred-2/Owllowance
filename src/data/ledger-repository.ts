@@ -30,15 +30,16 @@ const activitySelect = `SELECT t.id, t.type, t.occurred_at AS occurredAt,
   t.local_date AS localDate, t.time_zone AS timeZone, t.offset_minutes AS offsetMinutes,
   t.note, t.revision, t.linked_id AS linkedId, e.amount_minor AS amountMinor, a.id AS walletId, a.name AS walletName,
   t.category_id AS categoryId, c.name AS categoryName, c.icon_key AS iconKey, c.color_token AS colorToken,
-  CASE WHEN t.type = 'transfer' THEN (SELECT a2.name FROM entries e2 JOIN accounts a2 ON a2.id = e2.account_id
-    WHERE e2.transaction_id = t.id AND e2.id <> e.id) END AS counterpartyName,
+  CASE WHEN t.type = 'transfer' THEN COALESCE((SELECT a2.name FROM entries e2 JOIN accounts a2 ON a2.id = e2.account_id
+    WHERE e2.transaction_id = t.id AND e2.id <> e.id), g.name) END AS counterpartyName, gc.goal_id AS goalId,
   CASE WHEN t.type = 'transfer' THEN (SELECT e5.account_id FROM entries e5 WHERE e5.transaction_id = t.id AND e5.id <> e.id) END AS counterpartyId,
   CASE WHEN t.type = 'transfer' THEN (SELECT -SUM(e4.amount_minor) FROM transactions t4 JOIN entries e4 ON e4.transaction_id = t4.id
     WHERE t4.linked_id = t.id AND e4.account_id = e.account_id) END AS feeMinor
   FROM transactions t JOIN entries e ON e.transaction_id = t.id
-  JOIN accounts a ON a.id = e.account_id LEFT JOIN categories c ON c.id = t.category_id`;
-// Without a wallet filter a transfer appears once, from its source side.
-const singleTransferRow = "NOT (t.type = 'transfer' AND e.amount_minor > 0)";
+  JOIN accounts a ON a.id = e.account_id LEFT JOIN categories c ON c.id = t.category_id
+  LEFT JOIN goal_contributions gc ON gc.transaction_id = t.id LEFT JOIN goals g ON g.id = gc.goal_id`;
+// Without a wallet filter a transfer appears once, from its source side. Goal movements have one side only.
+const singleTransferRow = "NOT (t.type = 'transfer' AND e.amount_minor > 0 AND EXISTS (SELECT 1 FROM entries e6 WHERE e6.transaction_id = t.id AND e6.id <> e.id))";
 const activityOrder = ' ORDER BY t.local_date DESC, t.occurred_at DESC, t.id DESC LIMIT ? OFFSET ?';
 // Fee expenses are shown inside their transfer row.
 const foldedFees = 't.linked_id IS NULL';
@@ -100,6 +101,17 @@ async function totalBalance(sql: SqlConnection): Promise<number> {
   return (await sql.getFirstAsync<{ amount: number }>('SELECT COALESCE(SUM(amount_minor), 0) AS amount FROM entries'))?.amount ?? 0;
 }
 
+async function goalsTotal(sql: SqlConnection): Promise<number> {
+  return (await sql.getFirstAsync<{ amount: number }>('SELECT COALESCE(SUM(amount_minor), 0) AS amount FROM goal_contributions'))?.amount ?? 0;
+}
+
+// Goal movements are changed from their goal so the goal's saved total always matches its wallets.
+async function assertNotGoalMove(sql: SqlConnection, transactionId: string): Promise<void> {
+  if (await sql.getFirstAsync('SELECT id FROM goal_contributions WHERE transaction_id = ?', transactionId)) {
+    throw new ValidationError('This moved money with a savings goal. Change it from the goal.');
+  }
+}
+
 async function typeTotal(sql: SqlConnection, type: 'expense' | 'income'): Promise<number> {
   return (await sql.getFirstAsync<{ amount: number }>(`SELECT COALESCE(SUM(abs(e.amount_minor)), 0) AS amount FROM entries e
     JOIN transactions t ON t.id = e.transaction_id WHERE t.type = ?`, type))?.amount ?? 0;
@@ -124,10 +136,10 @@ function historyWhere(filter: HistoryFilter): { clause: string; params: SqlValue
   if (search) {
     if (search.length > 100) throw new ValidationError('Keep searches within 100 characters.');
     const pattern = `%${search.replace(/[\\%_]/g, character => `\\${character}`)}%`;
-    // Wallet names match either side of a transfer.
-    conditions.push(`(t.note LIKE ? ESCAPE '\\' OR c.name LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM entries e3
+    // Wallet names match either side of a transfer; goal names match goal movements.
+    conditions.push(`(t.note LIKE ? ESCAPE '\\' OR c.name LIKE ? ESCAPE '\\' OR g.name LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM entries e3
       JOIN accounts a3 ON a3.id = e3.account_id WHERE e3.transaction_id = t.id AND a3.name LIKE ? ESCAPE '\\'))`);
-    params.push(pattern, pattern, pattern);
+    params.push(pattern, pattern, pattern, pattern);
   }
   return { clause: ` WHERE ${conditions.join(' AND ')}`, params };
 }
@@ -266,13 +278,15 @@ export class SqlLedgerRepository implements LedgerRepository {
         todayIncomeMinor: assertMinor(todayIncome?.amount ?? 0),
         incomeMinor: assertMinor(income?.amount ?? 0), incomeCount: income?.count ?? 0,
         incomeCategories: await sql.getAllAsync("SELECT id, name, icon_key AS iconKey, color_token AS colorToken FROM categories WHERE type = 'income' AND archived_at IS NULL ORDER BY rowid"),
-        wallet: wallets[0] ?? null, wallets, archivedWallets, totalBalanceMinor: assertMinor(await totalBalance(sql)), todaySpentMinor: assertMinor(todaySpent?.amount ?? 0), spentMinor: assertMinor(totals?.spentMinor ?? 0), expenseCount: totals?.expenseCount ?? 0,
+        wallet: wallets[0] ?? null, wallets, archivedWallets, totalBalanceMinor: assertMinor(addMinor(await totalBalance(sql), await goalsTotal(sql))), todaySpentMinor: assertMinor(todaySpent?.amount ?? 0), spentMinor: assertMinor(totals?.spentMinor ?? 0), expenseCount: totals?.expenseCount ?? 0,
         categories: await sql.getAllAsync("SELECT id, name, icon_key AS iconKey, color_token AS colorToken FROM categories WHERE type = 'expense' AND archived_at IS NULL ORDER BY rowid"),
         recent: await sql.getAllAsync<ActivityItem>(activityQuery, 5, 0),
         budgets, due: await dueItems(sql, today), settings: await readSettings(sql),
-        goals: await sql.getAllAsync<Goal>(`SELECT g.id, g.name, g.target_minor AS targetMinor, g.target_date AS targetDate, g.icon_key AS iconKey,
-          g.color_token AS colorToken, g.archived_at AS archivedAt, COALESCE(SUM(c.amount_minor), 0) AS savedMinor
-          FROM goals g LEFT JOIN goal_contributions c ON c.goal_id = g.id GROUP BY g.id ORDER BY g.archived_at IS NOT NULL, g.rowid`),
+        goals: (await sql.getAllAsync<Omit<Goal, 'hasWalletMoves'> & { hasWalletMoves: number }>(`SELECT g.id, g.name, g.description, g.image_uri AS imageUri,
+          g.target_minor AS targetMinor, g.target_date AS targetDate, g.icon_key AS iconKey, g.color_token AS colorToken, g.archived_at AS archivedAt,
+          COALESCE(SUM(c.amount_minor), 0) AS savedMinor, COUNT(c.transaction_id) > 0 AS hasWalletMoves
+          FROM goals g LEFT JOIN goal_contributions c ON c.goal_id = g.id GROUP BY g.id ORDER BY g.archived_at IS NOT NULL, g.rowid`))
+          .map(goal => ({ ...goal, hasWalletMoves: Boolean(goal.hasWalletMoves) })),
         restoreSnapshotAt: (await sql.getFirstAsync<{ created_at: string }>('SELECT created_at FROM restore_snapshots WHERE id = 1'))?.created_at ?? null,
       };
     });
@@ -357,6 +371,7 @@ export class SqlLedgerRepository implements LedgerRepository {
       const stored = await sql.getFirstAsync<Stored>('SELECT id, type, revision, linked_id, category_id FROM transactions WHERE id = ? AND profile_id = ?', command.id, PROFILE);
       if (!stored) throw new ValidationError('This transfer no longer exists.');
       if (stored.type !== 'transfer') throw new ValidationError('Only transfers can be edited here.');
+      await assertNotGoalMove(sql, command.id);
       if (stored.revision !== command.revision) throw new ValidationError('This transfer changed. Reopen it and try again.');
       const entries = await sql.getAllAsync<{ id: string; account_id: string; amount_minor: number }>('SELECT id, account_id, amount_minor FROM entries WHERE transaction_id = ?', command.id);
       const source = entries.find(entry => entry.amount_minor < 0), destination = entries.find(entry => entry.amount_minor > 0);
@@ -468,6 +483,7 @@ export class SqlLedgerRepository implements LedgerRepository {
       if (stored.type === 'opening') throw new ValidationError('Opening balances cannot be deleted.');
       if (stored.linked_id) throw new ValidationError('Delete the transfer to remove its fee.');
       if (stored.revision !== revision) throw new ValidationError('This transaction changed. Reopen it and try again.');
+      await assertNotGoalMove(sql, id);
       const linked = await sql.getAllAsync<{ id: string }>('SELECT id FROM transactions WHERE linked_id = ?', id);
       const ids = [id, ...linked.map(row => row.id)];
       const removed = await sql.getAllAsync<{ account_id: string; amount_minor: number }>(
@@ -682,11 +698,16 @@ export class SqlLedgerRepository implements LedgerRepository {
     if (command.targetDate !== null) assertLocalDate(command.targetDate);
     if (!(categoryIconKeys as readonly string[]).includes(command.iconKey)) throw new ValidationError('Choose an icon.');
     if (!(categoryColorTokens as readonly string[]).includes(command.colorToken)) throw new ValidationError('Choose a color.');
+    const description = command.description.trim();
+    if (description.length > 500) throw new ValidationError('Keep the description within 500 characters.');
+    // Photos are copies kept in the app's own storage.
+    if (command.imageUri !== null && (command.imageUri.length > 1000 || !/^file:\/\/\S+$/.test(command.imageUri))) throw new ValidationError('Choose another photo.');
     return this.database.transaction(async sql => {
       if (!await sql.getFirstAsync('SELECT id FROM profiles WHERE id = ?', PROFILE)) throw new ValidationError('Create a wallet first.');
-      await sql.runAsync(`INSERT INTO goals (id, profile_id, name, target_minor, target_date, icon_key, color_token) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET name = excluded.name, target_minor = excluded.target_minor, target_date = excluded.target_date,
-        icon_key = excluded.icon_key, color_token = excluded.color_token`, command.id, PROFILE, name, command.targetMinor, command.targetDate, command.iconKey, command.colorToken);
+      await sql.runAsync(`INSERT INTO goals (id, profile_id, name, description, image_uri, target_minor, target_date, icon_key, color_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name, description = excluded.description, image_uri = excluded.image_uri, target_minor = excluded.target_minor,
+        target_date = excluded.target_date, icon_key = excluded.icon_key, color_token = excluded.color_token`,
+      command.id, PROFILE, name, description, command.imageUri, command.targetMinor, command.targetDate, command.iconKey, command.colorToken);
     });
   }
 
@@ -701,6 +722,9 @@ export class SqlLedgerRepository implements LedgerRepository {
   deleteGoal(id: string): Promise<void> {
     assertId(id);
     return this.database.transaction(async sql => {
+      if (await sql.getFirstAsync('SELECT id FROM goal_contributions WHERE goal_id = ? AND transaction_id IS NOT NULL', id)) {
+        throw new ValidationError("This goal has moved money with your wallets, so it can't be deleted. Archive it instead.");
+      }
       await sql.runAsync('DELETE FROM goal_contributions WHERE goal_id = ?', id);
       await sql.runAsync('DELETE FROM goals WHERE id = ? AND profile_id = ?', id, PROFILE);
     });
@@ -708,38 +732,58 @@ export class SqlLedgerRepository implements LedgerRepository {
 
   goalContributions(goalId: string): Promise<GoalContribution[]> {
     assertId(goalId);
-    return this.database.exclusive(sql => sql.getAllAsync<GoalContribution>(`SELECT id, goal_id AS goalId, amount_minor AS amountMinor, local_date AS localDate, note
-      FROM goal_contributions WHERE goal_id = ? ORDER BY local_date DESC, rowid DESC`, goalId));
+    return this.database.exclusive(sql => sql.getAllAsync<GoalContribution>(`SELECT c.id, c.goal_id AS goalId, c.amount_minor AS amountMinor, c.local_date AS localDate,
+      c.note, a.id AS walletId, a.name AS walletName FROM goal_contributions c LEFT JOIN entries e ON e.transaction_id = c.transaction_id
+      LEFT JOIN accounts a ON a.id = e.account_id WHERE c.goal_id = ? ORDER BY c.local_date DESC, c.rowid DESC`, goalId));
   }
 
-  // Positive adds to the goal, negative takes out; the saved total may not go below zero. Retries are harmless.
+  // Moves money between a wallet and a goal in one transaction: positive from the wallet into the goal,
+  // negative back out to the wallet. The goal may not go below zero. Retries are harmless.
   addContribution(command: ContributionCommand): Promise<void> {
-    assertId(command.id); assertId(command.goalId); assertMinor(command.amountMinor); assertLocalDate(command.localDate);
+    assertId(command.id); assertId(command.goalId); assertId(command.walletId); assertMinor(command.amountMinor); assertEventTime(command);
     if (command.amountMinor === 0) throw new ValidationError('Amount must not be zero.');
-    if (command.note.length > 200) throw new ValidationError('Keep notes within 200 characters.');
+    const note = command.note.trim();
+    if (note.length > 200) throw new ValidationError('Keep notes within 200 characters.');
     return this.database.transaction(async sql => {
-      const existing = await sql.getFirstAsync<{ goal_id: string; amount_minor: number }>('SELECT goal_id, amount_minor FROM goal_contributions WHERE id = ?', command.id);
+      const existing = await sql.getFirstAsync<{ goal_id: string; amount_minor: number; account_id: string | null }>(`SELECT c.goal_id, c.amount_minor, e.account_id
+        FROM goal_contributions c LEFT JOIN entries e ON e.transaction_id = c.transaction_id WHERE c.id = ?`, command.id);
       if (existing) {
-        if (existing.goal_id === command.goalId && existing.amount_minor === command.amountMinor) return;
+        if (existing.goal_id === command.goalId && existing.amount_minor === command.amountMinor && existing.account_id === command.walletId) return;
         throw new ValidationError('This request identifier was already used.');
       }
-      const goal = await sql.getFirstAsync<{ saved: number }>(`SELECT COALESCE((SELECT SUM(amount_minor) FROM goal_contributions WHERE goal_id = g.id), 0) AS saved
-        FROM goals g WHERE g.id = ? AND g.profile_id = ?`, command.goalId, PROFILE);
+      if (await sql.getFirstAsync('SELECT id FROM transactions WHERE id = ?', command.id)) throw new ValidationError('This request identifier was already used.');
+      const goal = await sql.getFirstAsync<{ saved: number; archived_at: string | null }>(`SELECT g.archived_at,
+        COALESCE((SELECT SUM(amount_minor) FROM goal_contributions WHERE goal_id = g.id), 0) AS saved FROM goals g WHERE g.id = ? AND g.profile_id = ?`, command.goalId, PROFILE);
       if (!goal) throw new ValidationError('Goal not found.');
+      if (goal.archived_at && command.amountMinor > 0) throw new ValidationError('Restore this goal to add money.');
       if (addMinor(goal.saved, command.amountMinor) < 0) throw new ValidationError("You can't take out more than is saved.");
-      await sql.runAsync('INSERT INTO goal_contributions (id, goal_id, amount_minor, local_date, note) VALUES (?, ?, ?, ?, ?)',
-        command.id, command.goalId, command.amountMinor, command.localDate, command.note.trim());
+      const balance = await activeBalance(sql, command.walletId);
+      if (balance === null) throw new ValidationError('Choose an available wallet.');
+      addMinor(balance, -command.amountMinor);
+      await sql.runAsync(`INSERT INTO transactions (id, profile_id, type, occurred_at, local_date, time_zone, offset_minutes, note, category_id)
+        VALUES (?, ?, 'transfer', ?, ?, ?, ?, ?, NULL)`, command.id, PROFILE, command.occurredAt, command.localDate, command.timeZone, command.offsetMinutes, note);
+      await sql.runAsync('INSERT INTO entries (id, transaction_id, profile_id, account_id, amount_minor) VALUES (?, ?, ?, ?, ?)', command.id, command.id, PROFILE, command.walletId, -command.amountMinor);
+      await sql.runAsync('INSERT INTO goal_contributions (id, goal_id, amount_minor, local_date, note, transaction_id) VALUES (?, ?, ?, ?, ?, ?)',
+        command.id, command.goalId, command.amountMinor, command.localDate, note, command.id);
     });
   }
 
   deleteContribution(id: string): Promise<void> {
     assertId(id);
     return this.database.transaction(async sql => {
-      const row = await sql.getFirstAsync<{ goal_id: string; amount_minor: number }>('SELECT goal_id, amount_minor FROM goal_contributions WHERE id = ?', id);
+      const row = await sql.getFirstAsync<{ goal_id: string; amount_minor: number; transaction_id: string | null }>('SELECT goal_id, amount_minor, transaction_id FROM goal_contributions WHERE id = ?', id);
       if (!row) return;
       const saved = (await sql.getFirstAsync<{ saved: number }>('SELECT COALESCE(SUM(amount_minor), 0) AS saved FROM goal_contributions WHERE goal_id = ?', row.goal_id))?.saved ?? 0;
       if (saved - row.amount_minor < 0) throw new ValidationError('Removing this would make the saved total negative.');
       await sql.runAsync('DELETE FROM goal_contributions WHERE id = ?', id);
+      // The wallet side goes too, so the money returns to (or leaves) the wallet it came from.
+      if (row.transaction_id) {
+        for (const entry of await sql.getAllAsync<{ account_id: string; amount_minor: number }>('SELECT account_id, amount_minor FROM entries WHERE transaction_id = ?', row.transaction_id)) {
+          addMinor(await walletBalance(sql, entry.account_id), -entry.amount_minor);
+        }
+        await sql.runAsync('DELETE FROM entries WHERE transaction_id = ?', row.transaction_id);
+        await sql.runAsync('DELETE FROM transactions WHERE id = ?', row.transaction_id);
+      }
     });
   }
 

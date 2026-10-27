@@ -33,7 +33,7 @@ function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, bu
             borderColor: checked ? colors.accent : colors.border, backgroundColor: checked ? colors.muted : colors.surface }}>
           <WalletBadge name={wallet.name} kind={wallet.kind} />
           <View style={{ flex: 1 }}><AppText size={14} numberOfLines={2}>{walletLabel(wallet, all)}</AppText><MoneyText value={wallet.balanceMinor} hidden={hiddenIds.includes(wallet.id)} size={12} style={{ fontWeight: '400' }} /></View>
-          <View style={{ width: 16 }}>{checked ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
+          {checked ? <View style={{ position: 'absolute', top: 5, right: 5 }}><AppIcon name="check" size={13} color={colors.accent} /></View> : null}
         </Pressable>;
       })}
     </View>

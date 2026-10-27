@@ -39,6 +39,14 @@
       "./plugins/with-native-loading.cjs",
       "expo-sharing",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Owllowance uses a photo only when you choose one for a goal.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {

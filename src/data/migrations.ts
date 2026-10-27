@@ -13,7 +13,7 @@ export async function seedFeeCategory(sql: SqlConnection): Promise<void> {
 }
 
 export const FEE_CATEGORY = '00000000-0000-4000-8000-000000000106';
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 // v4: transfers carry two entries, linked fee expenses, budgets and preferences.
 const ledgerSchema = `
 CREATE TABLE transactions (
@@ -98,6 +98,14 @@ CREATE TABLE goal_contributions (
   note TEXT NOT NULL CHECK (length(note) <= 200)
 );
 CREATE INDEX goal_contributions_goal ON goal_contributions(goal_id, local_date);
+`;
+// v7: goal descriptions and cover photos, and wallet-backed contributions. A linked contribution owns a
+// one-sided transfer on its wallet, so wallet balances move while net worth (wallets + goals) stays the same.
+const v7Objects = `
+ALTER TABLE goals ADD COLUMN description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 500);
+ALTER TABLE goals ADD COLUMN image_uri TEXT CHECK (image_uri IS NULL OR length(image_uri) <= 1000);
+ALTER TABLE goal_contributions ADD COLUMN transaction_id TEXT REFERENCES transactions(id);
+CREATE UNIQUE INDEX goal_contributions_transaction ON goal_contributions(transaction_id);
 `;
 const v4Objects = `
 CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN ${entrySignCheck} END;
@@ -268,6 +276,12 @@ export async function migrate(database: Database): Promise<void> {
       if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
       await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 6, new Date().toISOString());
       await sql.execAsync('PRAGMA user_version = 6');
+    }
+    if (version < 7) {
+      await sql.execAsync(v7Objects);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 7, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 7');
     }
   });
 }

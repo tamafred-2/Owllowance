@@ -41,7 +41,7 @@ export function PaymentsDue() {
   return <Surface style={{ gap: 6 }}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <AppText size={18} weight="600">Payments due</AppText>
-      <Button label="Manage" variant="quiet" onPress={() => router.push('/plan')} />
+      <Button label="Manage" variant="quiet" onPress={() => router.push({ pathname: '/plan', params: { tab: 'recurring' } })} />
     </View>
     {message ? <Feedback error={message.error}>{message.text}</Feedback> : null}
     {due.length ? <View testID="payments-due">

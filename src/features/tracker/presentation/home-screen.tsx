@@ -11,13 +11,13 @@ import { useTracker } from './tracker-context';
 import { usePullToRefresh } from './pull-to-refresh';
 import { useOpenSheet } from './sheet-context';
 import { PaymentsDue } from './payments-due';
-import { BudgetProgress } from './plan-screen';
+import { BudgetProgress, type PlanTab } from './plan-screen';
 import { SavedFeedback } from './saved-feedback';
 import { WalletSetup } from './wallet-setup';
 
-const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports' }[] = [
-  { label: 'Transfer', icon: 'transfer', href: '/transfer' /* opens as a sheet */ }, { label: 'Budgets', icon: 'budgets', href: '/plan' },
-  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals', href: '/plan' }, { label: 'Debt', icon: 'debt' },
+const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports'; tab?: PlanTab }[] = [
+  { label: 'Transfer', icon: 'transfer', href: '/transfer' /* opens as a sheet */ }, { label: 'Budgets', icon: 'budgets', href: '/plan', tab: 'budgets' },
+  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals', href: '/plan', tab: 'goals' }, { label: 'Debt', icon: 'debt' },
 ];
 
 export function HomeScreen() {
@@ -57,7 +57,7 @@ export function HomeScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {quickActions.map(action => <Pressable key={action.label} disabled={!action.href} accessibilityRole={action.href ? 'link' : 'button'}
             accessibilityLabel={action.href ? action.label : `${action.label}, coming soon`} accessibilityState={{ disabled: !action.href }}
-            onPress={() => { if (action.href === '/transfer') openSheet({ kind: 'transfer' }); else if (action.href) router.push(action.href); }}
+            onPress={() => { if (action.href === '/transfer') openSheet({ kind: 'transfer' }); else if (action.tab) router.push({ pathname: '/plan', params: { tab: action.tab } }); else if (action.href) router.push(action.href); }}
             style={({ pressed }) => ({ flex: 1, minWidth: fontScale > 1.2 ? 90 : 54, alignItems: 'center', gap: 8, paddingVertical: 8, opacity: !action.href ? 0.55 : pressed ? 0.7 : 1 })}>
             <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}><AppIcon name={action.icon} color={colors.accent} /></View>
             <AppText size={11} tone="secondary">{action.label}</AppText>
@@ -85,7 +85,7 @@ export function HomeScreen() {
       {overview.budgets.length ? <Surface style={{ gap: 0 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <AppText size={18} weight="600">Budgets</AppText>
-          <Button label="See all" variant="quiet" onPress={() => router.push('/plan')} />
+          <Button label="See all" variant="quiet" onPress={() => router.push({ pathname: '/plan', params: { tab: 'budgets' } })} />
         </View>
         <View testID="home-budgets">
           {/* The three closest to (or over) their limit first. */}

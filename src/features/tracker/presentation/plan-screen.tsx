@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { HeaderActions } from '../../../components/header-actions';
 import { AppModal } from '../../../components/app-modal';
@@ -93,35 +94,65 @@ function BudgetForm({ budget, onClose }: { budget?: Budget; onClose: () => void 
   </AppModal>;
 }
 
-export function PlanScreen() {
-  const { width } = useWindowDimensions();
+export type PlanTab = 'budgets' | 'recurring' | 'goals';
+const planTabs: { key: PlanTab; label: string; icon: IconName }[] = [
+  { key: 'budgets', label: 'Budgets', icon: 'budgets' }, { key: 'recurring', label: 'Recurring', icon: 'bills' }, { key: 'goals', label: 'Goals', icon: 'goals' },
+];
+// The tab last viewed this session, so the Plan tab in the navigation returns to it.
+let lastPlanTab: PlanTab = 'budgets';
+
+function PlanTabs({ tab, onChange }: { tab: PlanTab; onChange: (tab: PlanTab) => void }) {
+  const { colors } = useTheme();
+  return <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.muted }}>
+    {planTabs.map(item => {
+      const selected = tab === item.key;
+      return <Pressable key={item.key} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected }} aria-selected={selected} onPress={() => onChange(item.key)}
+        style={{ flex: 1, minHeight: 44, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderRadius: 10, backgroundColor: selected ? colors.accent : 'transparent' }}>
+        <AppIcon name={item.icon} size={16} color={selected ? colors.onAccent : colors.textSecondary} />
+        <AppText size={13} weight="600" numberOfLines={1} style={{ color: selected ? colors.onAccent : colors.textSecondary }}>{item.label}</AppText>
+      </Pressable>;
+    })}
+  </View>;
+}
+
+function BudgetsSection() {
   const { overview, error } = useTracker();
   const { colors } = useTheme();
   const [editing, setEditing] = useState<Budget | 'new' | null>(null);
-  const refreshControl = usePullToRefresh();
   const budgets = overview?.budgets ?? [];
   const canAdd = Boolean(overview?.categories.length) && !error && budgets.length < (overview?.categories.length ?? 0);
+  return <Surface style={{ gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <AppText accessibilityRole="header" size={20} weight="600">Budgets</AppText>
+      {canAdd ? <Button label="Add budget" variant="quiet" onPress={() => setEditing('new')} /> : null}
+    </View>
+    {budgets.length ? <View testID="budget-list">{budgets.map((budget, index) => <View key={budget.id} style={{ borderTopWidth: index ? 1 : 0, borderColor: colors.border }}>
+      <BudgetProgress budget={budget} onPress={() => setEditing(budget)} />
+    </View>)}</View> : <View style={{ gap: 8, paddingVertical: 12 }}>
+      <AppText size={14} tone="secondary">Set a spending limit for a category. Only posted expenses count; transfers don&apos;t.</AppText>
+      {canAdd ? <Button label="Create your first budget" icon="budgets" variant="secondary" onPress={() => setEditing('new')} /> : null}
+    </View>}
+    {editing ? <BudgetForm budget={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
+  </Surface>;
+}
+
+// Plan: budgets, recurring bills and goals, one tab at a time (?tab= opens a specific one).
+export function PlanScreen() {
+  const { width } = useWindowDimensions();
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const requested = planTabs.find(item => item.key === params.tab)?.key;
+  const [chosen, setChosen] = useState<PlanTab>(lastPlanTab);
+  const tab = requested ?? chosen;
+  useEffect(() => { lastPlanTab = tab; }, [tab]);
+  const refreshControl = usePullToRefresh();
   return <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: width >= 900 ? 40 : 20 }}>
-    <View style={{ width: '100%', maxWidth: 1050, alignSelf: 'center', gap: 24 }}>
+    <View style={{ width: '100%', maxWidth: 1050, alignSelf: 'center', gap: 20 }}>
       <View style={{ gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><AppText accessibilityRole="header" size={28} weight="700" style={{ flexShrink: 1 }}>Plan</AppText><HeaderActions /></View>
         <AppText size={14} tone="secondary">Make space for what&apos;s next.</AppText>
       </View>
-      <Surface style={{ gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <AppText accessibilityRole="header" size={20} weight="600">Budgets</AppText>
-          {canAdd ? <Button label="Add budget" variant="quiet" onPress={() => setEditing('new')} /> : null}
-        </View>
-        {budgets.length ? <View testID="budget-list">{budgets.map((budget, index) => <View key={budget.id} style={{ borderTopWidth: index ? 1 : 0, borderColor: colors.border }}>
-          <BudgetProgress budget={budget} onPress={() => setEditing(budget)} />
-        </View>)}</View> : <View style={{ gap: 8, paddingVertical: 12 }}>
-          <AppText size={14} tone="secondary">Set a spending limit for a category. Only posted expenses count; transfers don&apos;t.</AppText>
-          {canAdd ? <Button label="Create your first budget" icon="budgets" variant="secondary" onPress={() => setEditing('new')} /> : null}
-        </View>}
-      </Surface>
-      <RecurringSection />
-      <GoalsSection />
+      <PlanTabs tab={tab} onChange={next => { setChosen(next); router.setParams({ tab: next }); }} />
+      {tab === 'budgets' ? <BudgetsSection /> : tab === 'recurring' ? <RecurringSection /> : <GoalsSection />}
     </View>
-    {editing ? <BudgetForm budget={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
   </ScrollView>;
 }

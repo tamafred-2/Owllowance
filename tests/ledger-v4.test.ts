@@ -239,7 +239,7 @@ test('v3 database upgrades to v4 preserving records; interrupted upgrade rolls b
   assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 3);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   await repository.initialize(); await repository.initialize();
-  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 6);
+  assert.equal(f.connection.sqlite.prepare('PRAGMA user_version').get()?.user_version, 7);
   assert.deepEqual(f.connection.sqlite.prepare(`SELECT ${columns} FROM transactions ORDER BY id`).all(), before);
   const view = await repository.overview();
   assert.deepEqual([view.totalBalanceMinor, view.spentMinor], [98_750, 1_250]);
@@ -293,7 +293,7 @@ test('corrupt or unsupported backups are rejected before live data changes', asy
 });
 
 test('CSV export quotes text and neutralizes spreadsheet formulas', () => {
-  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null, counterpartyId: null };
+  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null, counterpartyId: null, goalId: null };
   const csv = transactionsCsv([
     { ...base, id: '1', type: 'expense', localDate: '2026-10-14', note: '=HYPERLINK("x")', amountMinor: -1205, walletName: 'Cash, main', categoryName: 'Food', counterpartyName: null },
     { ...base, id: '2', type: 'transfer', localDate: '2026-10-14', note: '', amountMinor: 5, walletName: '+Bank', categoryName: null, counterpartyName: 'Cash' },

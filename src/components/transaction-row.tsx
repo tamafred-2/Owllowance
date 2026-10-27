@@ -7,6 +7,11 @@ import { categoryColors, useTheme } from '../design-system/theme';
 
 function title(item: ActivityItem, walletHistory: boolean): string {
   if (item.type === 'opening') return 'Opening balance';
+  if (item.goalId) {
+    const into = item.amountMinor < 0;
+    if (!walletHistory) return into ? `${item.walletName} → ${item.counterpartyName}` : `${item.counterpartyName} → ${item.walletName}`;
+    return into ? `Saved to ${item.counterpartyName}` : `Taken from ${item.counterpartyName}`;
+  }
   if (item.type === 'transfer') {
     if (!walletHistory) return `${item.walletName} → ${item.counterpartyName}`;
     return item.amountMinor < 0 ? `Transfer to ${item.counterpartyName}` : `Transfer from ${item.counterpartyName}`;
@@ -18,7 +23,7 @@ function title(item: ActivityItem, walletHistory: boolean): string {
 export function TransactionRow({ item, walletHistory = false, onPress }: { item: ActivityItem; walletHistory?: boolean; onPress?: (item: ActivityItem) => void }) {
   const { colors, isDark } = useTheme();
   const tint = item.categoryId ? categoryColors(item.colorToken, isDark) : { background: colors.muted, foreground: colors.textSecondary };
-  const icon = (item.type === 'expense' || item.type === 'income') && item.iconKey ? item.iconKey as IconName : item.type;
+  const icon = (item.type === 'expense' || item.type === 'income') && item.iconKey ? item.iconKey as IconName : item.goalId ? 'goals' : item.type;
   // Global history shows a transfer once as a neutral movement; wallet history shows its signed side.
   const neutral = item.type === 'transfer' && !walletHistory;
   const positive = item.type === 'income' || (item.type === 'transfer' && walletHistory && item.amountMinor > 0);

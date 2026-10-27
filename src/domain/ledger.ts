@@ -17,6 +17,8 @@ export type ActivityItem = EventTime & {
   counterpartyName: string | null; counterpartyId: string | null; linkedId: string | null;
   // Transfers: the linked fee charged to this row's wallet (source side only).
   feeMinor: number | null;
+  // Money moved into (negative) or out of (positive) a savings goal; managed from the goal.
+  goalId: string | null;
 };
 export type HistoryFilter = {
   walletId?: string; type?: 'expense' | 'income' | 'transfer'; categoryId?: string;
@@ -50,12 +52,16 @@ export type RecurringCommand = {
   frequency: Frequency; every: number; startDate: string;
 };
 export type Goal = {
-  id: string; name: string; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string;
+  id: string; name: string; description: string; imageUri: string | null; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string;
   archivedAt: string | null; savedMinor: number;
+  // Has moved money with a wallet, so it keeps its history: archive instead of delete.
+  hasWalletMoves: boolean;
 };
-export type GoalContribution = { id: string; goalId: string; amountMinor: number; localDate: string; note: string };
-export type GoalCommand = { id: string; name: string; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string };
-export type ContributionCommand = { id: string; goalId: string; amountMinor: number; localDate: string; note: string };
+// walletId is null for amounts recorded before goals used wallets.
+export type GoalContribution = { id: string; goalId: string; amountMinor: number; localDate: string; note: string; walletId: string | null; walletName: string | null };
+export type GoalCommand = { id: string; name: string; description: string; imageUri: string | null; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string };
+// Positive moves money from the wallet into the goal; negative moves it back out to the wallet.
+export type ContributionCommand = EventTime & { id: string; goalId: string; walletId: string; amountMinor: number; note: string };
 export type PayRecurringCommand = EntryCommand & { recurringId: string; dueDate: string };
 export type Overview = {
   wallet: Wallet | null;

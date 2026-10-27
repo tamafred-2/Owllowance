@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { AppModal } from '../../../components/app-modal';
@@ -52,11 +53,12 @@ function TransferDetails({ transferId, onClose, onEdit }: { transferId: string; 
   </AppModal>;
 }
 
-// Income/expense rows open the edit screen; transfers and their fees open the transfer details.
+// Income/expense rows open the edit screen; transfers and their fees open the transfer details; goal movements open their goal.
 export function useTransactionOpener(origin: Origin, walletId?: string) {
   const [transferId, setTransferId] = useState<string | null>(null);
   const openSheet = useOpenSheet();
   const open = (item: ActivityItem) => {
+    if (item.goalId) { router.push({ pathname: '/goal', params: { id: item.goalId } }); return; }
     if (item.type === 'transfer' || item.linkedId) { setTransferId(item.linkedId ?? item.id); return; }
     if (item.type === 'opening') return;
     openSheet({ kind: 'entry', edit: item.id });

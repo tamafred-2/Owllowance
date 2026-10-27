@@ -18,7 +18,7 @@ import { finishNativeLoading, hasNativeLoading } from '../platform/native-loadin
 function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activity' | '/accounts' | '/plan'; label: string; icon: IconName; compact?: boolean }) {
   const path = usePathname();
   const { colors, isDark } = useTheme();
-  const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage'));
+  const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage')) || (href === '/plan' && (path === '/goal' || path === '/goal-edit'));
   // A soft round accent pill marks the current tab; pressing fades it (no rectangular ripple).
   const tint = isDark ? 'rgba(164, 198, 232, 0.18)' : 'rgba(36, 71, 107, 0.12)';
   return <Link href={href} asChild>

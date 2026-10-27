@@ -2,8 +2,9 @@ import { MAX_MINOR, ValidationError } from './money';
 
 // Portable, unencrypted JSON backup. Rows mirror the storage columns of schema v4.
 export const BACKUP_FORMAT = 'owllowance-backup';
-export const BACKUP_SCHEMA_VERSION = 6;
-// Older files still restore: version 4 has no recurring items, versions 4-5 have no goals.
+export const BACKUP_SCHEMA_VERSION = 7;
+// Older files still restore: version 4 has no recurring items, versions 4-5 have no goals,
+// versions 4-6 have no goal descriptions, photos or wallet-backed goal money.
 const MAX_RECORDS = 500_000;
 
 type Row = Record<string, string | number | null>;
@@ -29,11 +30,11 @@ export const backupColumns: Record<keyof BackupRecords, string[]> = {
   settings: ['key', 'value'],
   recurring: ['id', 'profile_id', 'name', 'type', 'amount_minor', 'account_id', 'category_id', 'frequency', 'every', 'start_date', 'paused'],
   recurring_occurrences: ['recurring_id', 'due_date', 'status', 'transaction_id'],
-  goals: ['id', 'profile_id', 'name', 'target_minor', 'target_date', 'icon_key', 'color_token', 'archived_at'],
-  goal_contributions: ['id', 'goal_id', 'amount_minor', 'local_date', 'note'],
+  goals: ['id', 'profile_id', 'name', 'target_minor', 'target_date', 'icon_key', 'color_token', 'archived_at', 'description', 'image_uri'],
+  goal_contributions: ['id', 'goal_id', 'amount_minor', 'local_date', 'note', 'transaction_id'],
 };
 const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor', 'every', 'paused', 'target_minor']);
-const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id', 'target_date']);
+const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id', 'target_date', 'image_uri']);
 const uuid = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i;
 
 function fail(message: string): never { throw new ValidationError(`This backup can't be restored: ${message}`); }
@@ -43,7 +44,7 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   if (!input || typeof input !== 'object') fail('the file is not an Owllowance backup.');
   const candidate = input as Partial<BackupEnvelope>;
   if (candidate.format !== BACKUP_FORMAT) fail('the file is not an Owllowance backup.');
-  if (![4, 5, BACKUP_SCHEMA_VERSION].includes(Number(candidate.schemaVersion))) fail('it was made by an unsupported version of Owllowance.');
+  if (![4, 5, 6, BACKUP_SCHEMA_VERSION].includes(Number(candidate.schemaVersion))) fail('it was made by an unsupported version of Owllowance.');
   if (candidate.currency !== 'PHP') fail('its currency is not supported.');
   if (typeof candidate.exportedAt !== 'string' || !Number.isFinite(Date.parse(candidate.exportedAt))) fail('its export date is invalid.');
   const records = candidate.records;
@@ -59,6 +60,8 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     if (count > MAX_RECORDS) fail('it is too large.');
     for (const row of rows) {
       if (!row || typeof row !== 'object' || Array.isArray(row)) fail(`a ${table} record is malformed.`);
+      if (Number(candidate.schemaVersion) < 7 && table === 'goals') Object.assign(row, { description: '', image_uri: null }, row);
+      if (Number(candidate.schemaVersion) < 7 && table === 'goal_contributions') Object.assign(row, { transaction_id: null }, row);
       if (Object.keys(row).length !== columns.length) fail(`a ${table} record has unexpected fields.`);
       for (const column of columns) {
         const value = (row as Row)[column];
@@ -78,6 +81,14 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   }
   const accountIds = ids(accounts), categoryIds = ids(categories), transactionIds = ids(transactions);
   const typeOf = new Map(transactions.map(row => [String(row.id), String(row.type)]));
+  // Wallet-backed goal money: each linked contribution owns a one-sided transfer of the opposite amount.
+  const goalMoves = new Map<string, number>();
+  for (const contribution of records.goal_contributions) {
+    if (contribution.transaction_id === null) continue;
+    const transactionId = String(contribution.transaction_id);
+    if (typeOf.get(transactionId) !== 'transfer' || goalMoves.has(transactionId)) fail('a goal contribution refers to a missing transaction.');
+    goalMoves.set(transactionId, Number(contribution.amount_minor));
+  }
   const byTransaction = new Map<string, Row[]>();
   for (const entry of entries) {
     if (!transactionIds.has(String(entry.transaction_id)) || !accountIds.has(String(entry.account_id))) fail('an entry refers to a missing record.');
@@ -88,7 +99,9 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     if (row.category_id !== null && !categoryIds.has(String(row.category_id))) fail('a transaction refers to a missing category.');
     if (row.linked_id !== null && typeOf.get(String(row.linked_id)) !== 'transfer') fail('a transfer fee refers to a missing transfer.');
     const own = byTransaction.get(String(row.id)) ?? [];
-    if (row.type === 'transfer') {
+    if (row.type === 'transfer' && goalMoves.has(String(row.id))) {
+      if (own.length !== 1 || Number(own[0].amount_minor) !== -Number(goalMoves.get(String(row.id)))) fail('a goal movement is unbalanced.');
+    } else if (row.type === 'transfer') {
       if (own.length !== 2 || Number(own[0].amount_minor) + Number(own[1].amount_minor) !== 0 || own[0].account_id === own[1].account_id) fail('a transfer is unbalanced.');
     } else if (own.length !== 1) fail('a transaction has the wrong number of entries.');
   }
@@ -117,6 +130,11 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
     total += Number(entry.amount_minor);
     if (Math.abs(next) > MAX_MINOR || Math.abs(total) > MAX_MINOR) fail('a balance is outside the supported range.');
     balances.set(String(entry.account_id), next);
+  }
+  // Net worth counts money in goals as well as wallets.
+  for (const contribution of records.goal_contributions) {
+    total += Number(contribution.amount_minor);
+    if (Math.abs(total) > MAX_MINOR) fail('a balance is outside the supported range.');
   }
   return {
     envelope: candidate as BackupEnvelope,

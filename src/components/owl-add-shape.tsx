@@ -1,7 +1,6 @@
 import Svg, { Path } from 'react-native-svg';
-import { useTheme } from '../design-system/theme';
 
-// Chubby owl face (feathered tufts, cream heart face, outlined) with a plus, for the main Add action.
+// Chubby owl face (feathered tufts, cream heart face) with a plus, for the main Add action.
 // Ears are exact mirror images; fur strokes are subtle so the plus stays the focus. Decorative only.
 export const HEAD = 'M5 2 Q9.6 4.2 12 6.6 Q13.4 6 14.4 7.4 Q17 9.2 19.5 10 C25 7.8 31 7 36 7 C41 7 47 7.8 52.5 10 Q55 9.2 57.6 7.4 Q58.6 6 60 6.6 Q62.4 4.2 67 2 Q66.8 5.2 66.2 7.6 Q67.4 8.8 66.4 11.6 Q66.2 14.2 64.6 16 Q68.6 17.4 67.6 20.4 Q70.4 22.2 69.4 25.6 Q71.4 28.2 70.2 32 Q71.4 34.6 70 37.6 Q70.4 40.6 68.6 42.8 Q68.2 46 66 47.6 Q64.8 50.6 62 51.4 Q60.2 54.2 57 54.4 Q54.6 56.6 51.2 56.4 Q48.4 58.2 44.8 57.6 Q40.6 59 36 58.2 Q31.4 59 27.2 57.6 Q23.6 58.2 20.8 56.4 Q17.4 56.6 15 54.4 Q11.8 54.2 10 51.4 Q7.2 50.6 6 47.6 Q3.8 46 3.4 42.8 Q1.6 40.6 2 37.6 Q0.6 34.6 1.8 32 Q0.6 28.2 2.6 25.6 Q1.6 22.2 4.4 20.4 Q3.4 17.4 7.4 16 Q5.8 14.2 5.6 11.6 Q4.6 8.8 5.8 7.6 Q5.2 5.2 5 2 Z';
 export const EAR_LEFT = 'M7 5.4 Q10.6 7.6 12.4 9.6 Q14 9.8 15.2 11.2 Q16.4 12.2 16.4 12.6 Q13.8 13 12.6 14.2 Q10.8 14.6 9.8 16 Q8.6 16.6 7.6 17.4 Q6.6 11.4 7 5.4 Z';
@@ -10,13 +9,12 @@ export const FACE = 'M36 27.5 Q34.4 23.6 32.4 22.6 Q30.8 19.4 27.6 17.6 Q24.4 15
 export const FUR = 'M24 12.6 Q27 11.6 29.6 12.9 M42.4 12.9 Q45 11.6 48 12.6 M33 10.2 Q36 9.3 39 10.2 M5.6 28 Q7.2 30.2 6.8 32.6 M66.4 28 Q64.8 30.2 65.2 32.6';
 export const FACE_FUR = 'M15.2 37.5 Q16.8 39.8 16.2 42.2 M56.8 37.5 Q55.2 39.8 55.8 42.2 M29.5 50.4 Q32 52 34.2 51 M37.8 51 Q40 52 42.5 50.4';
 export const CREAM = '#F6E4C6';
-// Always the mascot's navy; in dark mode a light edge keeps it visible on the dark bar.
+// Always the mascot's navy.
 export const NAVY = '#24476B';
 
 // The same owl as an SVG string, for places that cannot render components (home-screen widgets).
-export function owlAddSvg(isDark: boolean): string {
-  const line = isDark ? '#C9DAEC' : '#16202E';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 60"><path d="${HEAD}" fill="${NAVY}" stroke="${line}" stroke-width="${isDark ? 1.6 : 1.3}" stroke-linejoin="round"/>`
+export function owlAddSvg(_isDark: boolean): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 60"><path d="${HEAD}" fill="${NAVY}"/>`
     + `<path d="${EAR_LEFT}" fill="${CREAM}"/><path d="${EAR_RIGHT}" fill="${CREAM}"/>`
     + `<path d="${FUR}" fill="none" stroke="rgba(10,22,38,0.3)" stroke-width="1" stroke-linecap="round"/><path d="${FACE}" fill="${CREAM}"/>`
     + `<path d="${FACE_FUR}" fill="none" stroke="rgba(150,110,60,0.2)" stroke-width="0.9" stroke-linecap="round"/>`
@@ -24,10 +22,8 @@ export function owlAddSvg(isDark: boolean): string {
 }
 
 export function OwlAddShape({ width = 70 }: { width?: number }) {
-  const { isDark } = useTheme();
-  const line = isDark ? '#C9DAEC' : '#16202E';
   return <Svg width={width} height={width * 60 / 72} viewBox="0 0 72 60" accessible={false}>
-    <Path d={HEAD} fill={NAVY} stroke={line} strokeWidth={isDark ? 1.6 : 1.3} strokeLinejoin="round" />
+    <Path d={HEAD} fill={NAVY} />
     <Path d={EAR_LEFT} fill={CREAM} />
     <Path d={EAR_RIGHT} fill={CREAM} />
     <Path d={FUR} fill="none" stroke="rgba(10,22,38,0.3)" strokeWidth={1} strokeLinecap="round" />

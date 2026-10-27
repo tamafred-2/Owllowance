@@ -90,14 +90,16 @@ export class TrackerService {
       amountMinor: item.amountMinor, note: item.name, ...(item.dueDate < today ? eventTimeOn(item.dueDate) : eventTime()) };
   }
 
-  prepareGoal(input: { id?: string; name: string; target: string; targetDate: string | null; iconKey: string; colorToken: string }): GoalCommand {
-    return { id: input.id ?? this.uuid(), name: input.name, targetMinor: parseAmount(input.target), targetDate: input.targetDate, iconKey: input.iconKey, colorToken: input.colorToken };
+  prepareGoal(input: { id?: string; name: string; description: string; imageUri: string | null; target: string; targetDate: string | null; iconKey: string; colorToken: string }): GoalCommand {
+    return { id: input.id ?? this.uuid(), name: input.name, description: input.description, imageUri: input.imageUri, targetMinor: parseAmount(input.target),
+      targetDate: input.targetDate, iconKey: input.iconKey, colorToken: input.colorToken };
   }
 
-  // Taking out is stored as a negative contribution.
-  prepareContribution(input: { goalId: string; amount: string; takeOut: boolean; localDate: string; note: string }): ContributionCommand {
+  // Taking out is stored as a negative contribution and credits the wallet.
+  prepareContribution(input: { goalId: string; walletId: string; amount: string; takeOut: boolean; localDate: string; note: string }): ContributionCommand {
+    if (!input.walletId) throw new ValidationError('Choose a wallet.');
     const amount = parseAmount(input.amount);
-    return { id: this.uuid(), goalId: input.goalId, amountMinor: input.takeOut ? -amount : amount, localDate: input.localDate, note: input.note.trim() };
+    return { id: this.uuid(), goalId: input.goalId, walletId: input.walletId, amountMinor: input.takeOut ? -amount : amount, note: input.note.trim(), ...this.when(input.localDate) };
   }
 
   private when(localDate?: string) {

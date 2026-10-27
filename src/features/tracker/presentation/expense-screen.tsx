@@ -109,10 +109,12 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
                 const selected = form.categoryId === category.id;
                 const tint = categoryColors(category.colorToken, isDark);
                 return <Pressable key={category.id} accessibilityRole="radio" accessibilityLabel={category.name} accessibilityState={{ checked: selected, disabled: busy }} aria-checked={selected} aria-disabled={busy}
-                  disabled={busy} onPress={() => form.setCategoryId(category.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 64, paddingHorizontal: 12, width: '48.5%',
+                  disabled={busy} onPress={() => form.setCategoryId(category.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 60, paddingLeft: 8, paddingRight: 14, paddingVertical: 8, width: '48.5%',
                     borderWidth: 1, borderRadius: 16, borderColor: selected ? colors.accent : colors.border, backgroundColor: selected ? colors.muted : colors.surface }}>
-                  <View style={{ padding: 6, borderRadius: 10, backgroundColor: tint.background }}><AppIcon name={category.iconKey as IconName} size={20} color={tint.foreground} /></View>
-                  <AppText size={13} style={{ flex: 1 }}>{category.name}</AppText><View style={{ width: 16 }}>{selected ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
+                  <View style={{ padding: 5, borderRadius: 10, backgroundColor: tint.background }}><AppIcon name={category.iconKey as IconName} size={18} color={tint.foreground} /></View>
+                  {/* Whole words only: the label gets the full width and the check sits in the corner. */}
+                  <AppText size={12} numberOfLines={2} textBreakStrategy="simple" style={{ flex: 1 }}>{category.name}</AppText>
+                  {selected ? <View style={{ position: 'absolute', top: 5, right: 5 }}><AppIcon name="check" size={13} color={colors.accent} /></View> : null}
                 </Pressable>;
               })}
             </View>
@@ -123,7 +125,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
                 accessibilityState={{ checked: form.walletId === wallet.id, disabled: busy }} aria-checked={form.walletId === wallet.id}
                 disabled={busy} onPress={() => form.setWalletId(wallet.id)}
                 style={{ width: '48.5%', minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, borderColor: form.walletId === wallet.id ? colors.accent : colors.border, backgroundColor: form.walletId === wallet.id ? colors.muted : colors.surface }}>
-                <WalletBadge name={wallet.name} kind={wallet.kind} /><AppText size={14} numberOfLines={2} style={{ flex: 1 }}>{walletLabel(wallet, allWallets)}</AppText><View style={{ width: 16 }}>{form.walletId === wallet.id ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
+                <WalletBadge name={wallet.name} kind={wallet.kind} /><AppText size={14} numberOfLines={2} style={{ flex: 1 }}>{walletLabel(wallet, allWallets)}</AppText>{form.walletId === wallet.id ? <View style={{ position: 'absolute', top: 5, right: 5 }}><AppIcon name="check" size={13} color={colors.accent} /></View> : null}
               </Pressable>)}
             </View>
             {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} hidden={overview.settings.hiddenBalances.includes(form.wallet.id)} /></View> : null}
