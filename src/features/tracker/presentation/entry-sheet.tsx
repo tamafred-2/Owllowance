@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, View, useWindowDimensions } from 'react-native';
+import { Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../design-system/primitives';
 import { useTheme } from '../../../design-system/theme';
@@ -19,6 +19,8 @@ export function SheetHost({ children }: { children: ReactNode }) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [slide] = useState(() => new Animated.Value(1));
+  // Extra downward offset while the handle is dragged.
+  const [drag] = useState(() => new Animated.Value(0));
   const close = useCallback((saved?: string) => {
     Animated.timing(slide, { toValue: 1, duration: 180, useNativeDriver: NATIVE }).start(() => setSheet(null));
     if (saved && savedMessages[saved]) setToast(savedMessages[saved]);
@@ -26,13 +28,25 @@ export function SheetHost({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!sheet) return;
     slide.setValue(1);
+    drag.setValue(0);
     Animated.timing(slide, { toValue: 0, duration: 240, useNativeDriver: NATIVE }).start();
-  }, [sheet, slide]);
+  }, [sheet, slide, drag]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
+  // Drag the handle down to close: far enough or a quick flick closes, otherwise it springs back.
+  const handle = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
+    onPanResponderMove: (_, gesture) => drag.setValue(Math.max(0, gesture.dy)),
+    onPanResponderRelease: (_, gesture) => {
+      if (gesture.dy > 120 || (gesture.vy > 0.8 && gesture.dy > 20)) close();
+      else Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start();
+    },
+    onPanResponderTerminate: () => Animated.spring(drag, { toValue: 0, useNativeDriver: NATIVE }).start(),
+  }), [drag, close]);
   const frame = useMemo<SheetFrame | null>(() => sheet ? {
     params: Object.fromEntries(Object.entries(sheet).filter(([key]) => key !== 'kind').map(([key, value]) => [key, value as string | undefined])),
     close, replace: setSheet,
@@ -50,8 +64,11 @@ export function SheetHost({ children }: { children: ReactNode }) {
       </Animated.View>
       <KeyboardAvoidingView pointerEvents="box-none" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Animated.View testID="entry-sheet" style={{ height: Math.min(height - insets.top - 24, height * 0.94), backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden', paddingBottom: insets.bottom,
-          transform: [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [0, height] }) }] }}>
-          <View accessible={false} style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, marginTop: 8 }} />
+          transform: [{ translateY: Animated.add(slide.interpolate({ inputRange: [0, 1], outputRange: [0, height] }), drag) }] }}>
+          <View {...handle.panHandlers} testID="sheet-handle" accessible accessibilityRole="button" accessibilityLabel="Drag down to close" onAccessibilityTap={() => close()}
+            style={{ height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border }} />
+          </View>
           <FrameContext.Provider value={frame}>
             <View key={JSON.stringify(sheet)} style={{ flex: 1 }}>
               {sheet.kind === 'entry' ? <ExpenseScreen /> : sheet.kind === 'transfer' ? <TransferScreen /> : <NewWalletScreen />}

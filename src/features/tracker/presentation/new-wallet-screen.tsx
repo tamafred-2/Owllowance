@@ -17,7 +17,7 @@ export function NewWalletScreen() {
   const { error, overview } = useTracker();
   return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button label={frame ? 'Close' : 'Back to Wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>
+      {frame ? null : <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Wallet" icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>}
       <AppText accessibilityRole="header" size={28} weight="600">Add a wallet</AppText>
       <Surface style={{ gap: 20 }}>
         <View style={{ gap: 8 }}><AppText size={14}>1. Wallet type</AppText><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

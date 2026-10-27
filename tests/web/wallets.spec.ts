@@ -134,7 +134,7 @@ test('duplicate provider wallets stay distinct and forms hide mobile navigation'
   await page.getByRole('button', { name: 'Add transaction', exact: true }).click();
   await expect(page.getByTestId('entry-sheet')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Wallet: GCash 2', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Close form', exact: true }).click({ position: { x: 20, y: 20 } }); // Tap outside the sheet.
   await expect(page.getByTestId('entry-sheet')).toHaveCount(0);
   await expect(page.getByTestId('bottom-navigation')).toBeVisible();
 });

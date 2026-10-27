@@ -21,17 +21,17 @@ function amountOrZero(input: string): number {
 function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, busy, hiddenIds }: { hiddenIds: string[]; label: string; wallets: Wallet[]; all: Wallet[]; selected: string; disabledId: string; onSelect: (id: string) => void; busy: boolean }) {
   const { colors } = useTheme();
   return <View style={{ gap: 10 }}><AppText size={14} weight="500">{label}</AppText>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
       {wallets.map(wallet => {
         const checked = selected === wallet.id;
         const blocked = wallet.id === disabledId;
         return <Pressable key={wallet.id} accessibilityRole="radio" accessibilityLabel={`${label}: ${walletLabel(wallet, all)}`} accessibilityState={{ checked, disabled: busy || blocked }} aria-checked={checked}
           disabled={busy || blocked} onPress={() => onSelect(wallet.id)}
-          style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, opacity: blocked ? 0.45 : 1,
+          style={{ width: '48.5%', minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, opacity: blocked ? 0.45 : 1,
             borderColor: checked ? colors.accent : colors.border, backgroundColor: checked ? colors.muted : colors.surface }}>
           <WalletBadge name={wallet.name} kind={wallet.kind} />
-          <View style={{ flexShrink: 1 }}><AppText size={14}>{walletLabel(wallet, all)}</AppText><MoneyText value={wallet.balanceMinor} hidden={hiddenIds.includes(wallet.id)} size={12} style={{ fontWeight: '400' }} /></View>
-          {checked ? <AppIcon name="check" size={16} color={colors.accent} /> : null}
+          <View style={{ flex: 1 }}><AppText size={14} numberOfLines={2}>{walletLabel(wallet, all)}</AppText><MoneyText value={wallet.balanceMinor} hidden={hiddenIds.includes(wallet.id)} size={12} style={{ fontWeight: '400' }} /></View>
+          <View style={{ width: 16 }}>{checked ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
         </Pressable>;
       })}
     </View>
@@ -66,7 +66,7 @@ export function TransferScreen() {
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
-        <View style={{ alignSelf: 'flex-start' }}><Button label={frame ? 'Close' : origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>
+        {frame ? null : <View style={{ alignSelf: 'flex-start' }}><Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={form.busy} onPress={() => leave()} /></View>}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <AppText accessibilityRole="header" size={28} weight="600">Transfer</AppText>
           <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={form.busy} />

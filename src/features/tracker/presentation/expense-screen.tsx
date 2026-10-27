@@ -83,11 +83,11 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button label={frame ? 'Close' : origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon={frame ? 'close' : 'back'} iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />
+        {!frame || editing ? <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {frame ? <View /> : <Button label={origin === 'home' ? 'Back to Home' : origin === 'history' ? 'Back to History' : 'Back to wallet'} icon="back" iconOnly variant="quiet" disabled={busy} onPress={() => leave(originWalletId)} />}
           {editing ? <Button label="Duplicate" icon="duplicate" iconOnly variant="quiet" disabled={busy}
             onPress={() => frame ? frame.replace({ kind: 'entry', duplicate: editing.id }) : router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
-        </View>
+        </View> : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}><View style={{ padding: 8, borderRadius: 12, backgroundColor: colors.muted }}><AppIcon name={mode} size={18} color={colors.accent} /></View><AppText accessibilityRole="header" size={22} weight="600" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>{heading}</AppText></View>
           <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={busy} />
@@ -103,26 +103,26 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
           <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus={!editing}
             editable={!busy} style={{ fontSize: 40, minHeight: 92, fontVariant: ['tabular-nums'] }} />
           <View style={{ gap: 10 }}><AppText size={14} weight="500">Category</AppText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
               {categories.map(category => {
                 const selected = form.categoryId === category.id;
                 const tint = categoryColors(category.colorToken, isDark);
                 return <Pressable key={category.id} accessibilityRole="radio" accessibilityLabel={category.name} accessibilityState={{ checked: selected, disabled: busy }} aria-checked={selected} aria-disabled={busy}
-                  disabled={busy} onPress={() => form.setCategoryId(category.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 64, paddingHorizontal: 12, flexBasis: '46%', flexGrow: 1,
+                  disabled={busy} onPress={() => form.setCategoryId(category.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 64, paddingHorizontal: 12, width: '48.5%',
                     borderWidth: 1, borderRadius: 16, borderColor: selected ? colors.accent : colors.border, backgroundColor: selected ? colors.muted : colors.surface }}>
                   <View style={{ padding: 6, borderRadius: 10, backgroundColor: tint.background }}><AppIcon name={category.iconKey as IconName} size={20} color={tint.foreground} /></View>
-                  <AppText size={13} style={{ flex: 1 }}>{category.name}</AppText>{selected ? <AppIcon name="check" size={16} color={colors.accent} /> : null}
+                  <AppText size={13} style={{ flex: 1 }}>{category.name}</AppText><View style={{ width: 16 }}>{selected ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
                 </Pressable>;
               })}
             </View>
           </View>
           <View style={{ gap: 10 }}><AppText size={14} weight="500">Wallet</AppText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
               {wallets.map(wallet => <Pressable key={wallet.id} accessibilityRole="radio" accessibilityLabel={`Wallet: ${walletLabel(wallet, allWallets)}`}
                 accessibilityState={{ checked: form.walletId === wallet.id, disabled: busy }} aria-checked={form.walletId === wallet.id}
                 disabled={busy} onPress={() => form.setWalletId(wallet.id)}
-                style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, borderColor: form.walletId === wallet.id ? colors.accent : colors.border, backgroundColor: form.walletId === wallet.id ? colors.muted : colors.surface }}>
-                <WalletBadge name={wallet.name} kind={wallet.kind} /><AppText size={14} style={{ flexShrink: 1 }}>{walletLabel(wallet, allWallets)}</AppText>{form.walletId === wallet.id ? <AppIcon name="check" size={16} color={colors.accent} /> : null}
+                style={{ width: '48.5%', minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, borderColor: form.walletId === wallet.id ? colors.accent : colors.border, backgroundColor: form.walletId === wallet.id ? colors.muted : colors.surface }}>
+                <WalletBadge name={wallet.name} kind={wallet.kind} /><AppText size={14} numberOfLines={2} style={{ flex: 1 }}>{walletLabel(wallet, allWallets)}</AppText><View style={{ width: 16 }}>{form.walletId === wallet.id ? <AppIcon name="check" size={16} color={colors.accent} /> : null}</View>
               </Pressable>)}
             </View>
             {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} hidden={overview.settings.hiddenBalances.includes(form.wallet.id)} /></View> : null}

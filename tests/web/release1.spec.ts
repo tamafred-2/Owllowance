@@ -251,7 +251,11 @@ test('entry forms open as a sheet over the current page and close back to it', a
   await expect(page.getByRole('heading', { name: 'Wallet', exact: true })).toBeAttached(); // The page stays underneath.
   await page.waitForTimeout(400); // Let the slide-up finish for the screenshot.
   await page.screenshot({ path: testInfo.outputPath('expense-sheet.png') });
-  await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0); // No X: drag the handle down.
+  { const handle = (await page.getByTestId('sheet-handle').boundingBox())!;
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2); await page.mouse.down();
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + 80, { steps: 4 }); await page.mouse.move(handle.x + handle.width / 2, handle.y + 220, { steps: 4 });
+    await page.mouse.up(); }
   await expect(sheet).toHaveCount(0);
   await page.getByRole('button', { name: 'Add wallet', exact: true }).click();
   await expect(sheet.getByRole('heading', { name: 'Add a wallet', exact: true })).toBeVisible();
