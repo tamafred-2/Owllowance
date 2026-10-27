@@ -22,7 +22,9 @@ const signing = process.env.OWLLOWANCE_RELEASE_SIGNING || join(process.env.USERP
 if (!existsSync(signing)) { console.error(`Release signing file not found: ${signing}`); process.exit(1); }
 
 function run(command, commandArgs, options = {}) {
-  const result = spawnSync(command, commandArgs, { stdio: 'inherit', shell: process.platform === 'win32', ...options });
+  // Quote paths with spaces for the Windows shell.
+  const quoted = process.platform === 'win32' && command.includes(' ') ? `"${command}"` : command;
+  const result = spawnSync(quoted, commandArgs, { stdio: 'inherit', shell: process.platform === 'win32', ...options });
   if (result.status !== 0) { console.error(`\n${command} ${commandArgs.join(' ')} failed.`); process.exit(result.status ?? 1); }
 }
 
@@ -36,7 +38,7 @@ if (!args.has('--skip-build')) {
     OWLLOWANCE_CMAKE_DIR: process.env.OWLLOWANCE_CMAKE_DIR || 'C:\\owl-cxx-owllowance',
     EXPO_NO_TELEMETRY: '1', NODE_ENV: 'production', OWLLOWANCE_RELEASE_SIGNING: signing,
   };
-  const gradle = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
+  const gradle = join(root, 'android', process.platform === 'win32' ? 'gradlew.bat' : 'gradlew');
   run(gradle, [':app:assembleRelease', '-PreactNativeArchitectures=arm64-v8a', '--max-workers=2', '--no-daemon',
     '-Dorg.gradle.parallel=false', '-Pkotlin.compiler.execution.strategy=in-process', '--console=plain',
     '--init-script', join('..', 'scripts', 'android-cmake.init.gradle')], { cwd: join(root, 'android'), env });
