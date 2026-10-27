@@ -47,7 +47,8 @@ export function AccountsScreen() {
   const compact = width >= 370 && fontScale <= 1.15 && ![...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])].some(wallet => Math.abs(wallet.balanceMinor) >= 1000000000);
   const [sceneVisible, setSceneVisible] = useState(true);
   const [deckDragging, setDeckDragging] = useState(false);
-  const refreshControl = usePullToRefresh();
+  // Off while a finger is on the card deck, so dragging a card down never starts a refresh.
+  const refreshControl = usePullToRefresh(undefined, !deckDragging);
   const rememberDeckWallet = useCallback((walletId: string) => {
     lastDeckWallet = walletId;
     void service?.repository.saveSettings({ deckWallet: walletId }).catch(() => undefined);
