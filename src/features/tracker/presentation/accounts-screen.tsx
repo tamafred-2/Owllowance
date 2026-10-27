@@ -7,7 +7,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppText, Button, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { forestSummaryColors, useTheme } from '../../../design-system/theme';
-import { type Wallet, type WalletKind } from '../../../domain/ledger';
+import { NET_WORTH, type Wallet, type WalletKind } from '../../../domain/ledger';
 import { WalletCard } from '../../../components/wallet-card';
 import { ForestScene } from '../../../components/forest-scene';
 import { useTracker } from './tracker-context';
@@ -63,9 +63,9 @@ export function AccountsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <AppIcon name="wallet" size={15} color={palette.secondary} />
                 <AppText size={11} weight="600" style={{ letterSpacing: 0.8, color: palette.secondary, flex: 1 }}>NET WORTH</AppText>
-                <BalanceEye color={palette.secondary} size={16} />
+                <BalanceEye target={NET_WORTH} color={palette.secondary} size={16} />
               </View>
-              <MoneyText value={overview.totalBalanceMinor} size={24} fit style={{ color: palette.text }} />
+              <MoneyText value={overview.totalBalanceMinor} size={24} fit hidden={overview.settings.hiddenBalances.includes(NET_WORTH)} style={{ color: palette.text }} />
             </Surface>;
           }}
         </ForestScene>
@@ -82,7 +82,7 @@ export function AccountsScreen() {
         return <View key={kind} style={{ gap: 12 }}>
           <AppText size={14} weight="600" tone="secondary">{{ cash: 'Cash', ewallet: 'E-wallets', bank: 'Bank accounts' }[kind]}</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} balanceToggle={color => <BalanceEye color={color} size={14} />} />)}
+            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={overview.settings.hiddenBalances.includes(wallet.id)} balanceToggle={color => <BalanceEye target={wallet.id} color={color} size={14} />} />)}
           </View>
         </View>;
       })}
@@ -91,7 +91,7 @@ export function AccountsScreen() {
         <AppText size={20} weight="600">Archived wallets</AppText>
         <AppText size={14} tone="secondary">Balances remain included in your total.</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} balanceToggle={color => <BalanceEye color={color} size={14} />} />)}
+          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={overview.settings.hiddenBalances.includes(wallet.id)} balanceToggle={color => <BalanceEye target={wallet.id} color={color} size={14} />} />)}
         </View>
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>

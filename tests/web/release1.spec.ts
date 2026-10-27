@@ -146,13 +146,14 @@ test('budget progress, insights, custom category, hidden balances and theme pers
   await expect(page.getByRole('button', { name: 'Dark', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Hide balances' })).toHaveCount(3); // Net worth + two cards.
-  await page.getByRole('button', { name: 'Hide balances' }).nth(1).click(); // The eye on the Cash card.
-  await expect(page.getByRole('heading', { name: 'Wallet', exact: true })).toBeVisible(); // Did not open the card.
-  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Show balances' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Hide balance', exact: true })).toHaveCount(3); // Net worth + two cards.
+  await page.getByRole('button', { name: 'Hide balance', exact: true }).nth(1).click(); // The eye on the Cash card.
+  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toHaveCount(0); // Did not open the card.
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('₱ ••••');
   await page.reload();
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('₱ ••••');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('₱200.00');
+  await expect(page.getByText('₱ ••••', { exact: true })).toHaveCount(1); // Net worth stays visible.
   await expect(page.getByTestId('bottom-navigation')).toHaveCSS('background-color', 'rgb(34, 40, 51)');
   await page.screenshot({ path: testInfo.outputPath('hidden-dark.png'), fullPage: true });
 });

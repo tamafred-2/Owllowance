@@ -31,8 +31,10 @@ export type Budget = {
   windowStart: string; windowEnd: string; spentMinor: number;
 };
 export type ThemePreference = 'system' | 'light' | 'dark';
-export type Settings = { theme: ThemePreference; hideBalances: boolean; reduceMotion: boolean; lastBackupAt: string | null };
-export const defaultSettings: Settings = { theme: 'system', hideBalances: false, reduceMotion: false, lastBackupAt: null };
+// hiddenBalances: wallet IDs (or NET_WORTH) whose balance is masked on screen.
+export type Settings = { theme: ThemePreference; hiddenBalances: string[]; reduceMotion: boolean; lastBackupAt: string | null };
+export const NET_WORTH = 'net-worth';
+export const defaultSettings: Settings = { theme: 'system', hiddenBalances: [], reduceMotion: false, lastBackupAt: null };
 export type Overview = {
   wallet: Wallet | null;
   wallets: Wallet[];
@@ -90,7 +92,8 @@ export interface LedgerRepository {
   saveBudget(command: BudgetCommand): Promise<void>;
   deleteBudget(id: string): Promise<void>;
   report(fromDate: string, toDateExclusive: string): Promise<Report>;
-  saveSettings(settings: Partial<Settings>): Promise<void>;
+  saveSettings(settings: Partial<Omit<Settings, 'hiddenBalances'>>): Promise<void>;
+  setBalanceHidden(target: string, hidden: boolean): Promise<void>;
   exportBackup(appVersion: string): Promise<BackupEnvelope>;
   restoreBackup(envelope: BackupEnvelope): Promise<void>;
   undoRestore(): Promise<void>;

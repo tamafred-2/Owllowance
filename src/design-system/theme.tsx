@@ -35,11 +35,11 @@ export function categoryColors(token: string | null, isDark: boolean): { backgro
   return { background: pair[0], foreground: pair[1] };
 }
 
-export type ThemePreferences = { theme: 'system' | 'light' | 'dark'; hideBalances: boolean; reduceMotion: boolean };
-const Context = createContext({ colors: light, isDark: false, hideBalances: false, reduceMotion: false });
+export type ThemePreferences = { theme: 'system' | 'light' | 'dark'; reduceMotion: boolean };
+const Context = createContext({ colors: light, isDark: false, reduceMotion: false });
 export function ThemeProvider({ children, preferences }: { children: ReactNode; preferences?: ThemePreferences }) {
   const system = useColorScheme();
   const isDark = (preferences?.theme && preferences.theme !== 'system' ? preferences.theme : system) === 'dark';
-  return <Context.Provider value={{ colors: isDark ? dark : light, isDark, hideBalances: preferences?.hideBalances ?? false, reduceMotion: preferences?.reduceMotion ?? false }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ colors: isDark ? dark : light, isDark, reduceMotion: preferences?.reduceMotion ?? false }}>{children}</Context.Provider>;
 }
 export const useTheme = () => useContext(Context);

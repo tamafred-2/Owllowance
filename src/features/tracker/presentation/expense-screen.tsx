@@ -121,7 +121,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
                 <WalletBadge name={wallet.name} kind={wallet.kind} /><AppText size={14} style={{ flexShrink: 1 }}>{walletLabel(wallet, allWallets)}</AppText>{form.walletId === wallet.id ? <AppIcon name="check" size={16} color={colors.accent} /> : null}
               </Pressable>)}
             </View>
-            {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} /></View> : null}
+            {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} hidden={overview.settings.hiddenBalances.includes(form.wallet.id)} /></View> : null}
           </View>
           {showNote ? <FormField label="Note (optional)" value={form.note} onChangeText={form.setNote} maxLength={500} multiline editable={!busy} placeholder="What was it for?" /> :
             <Button label="Add a note" variant="quiet" disabled={busy} onPress={() => setShowNote(true)} />}

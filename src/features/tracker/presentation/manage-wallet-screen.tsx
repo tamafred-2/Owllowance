@@ -9,11 +9,12 @@ import { walletKindLabels } from '../../../domain/ledger';
 import { WalletBadge } from '../../../components/wallet-card';
 import { useTracker } from './tracker-context';
 import { SavedFeedback } from './saved-feedback';
-import { BalanceEye } from './balance-eye';
+import { BalanceEye, useBalanceHidden } from './balance-eye';
 
 function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
   const { overview, error: storageError } = useTracker();
   const [renaming, setRenaming] = useState(false);
+  const hidden = useBalanceHidden(wallet.id);
   const disabled = Boolean(storageError);
   return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 20 }}>
@@ -28,7 +29,7 @@ function WalletEditor({ wallet, saved }: { wallet: Wallet; saved?: string }) {
           <WalletBadge name={wallet.name} kind={wallet.kind} />
           <View style={{ flex: 1 }}><AppText size={20} weight="600">{wallet.name}</AppText><AppText size={12} tone="secondary">{walletKindLabels[wallet.kind]} / PHP{wallet.archivedAt ? ' / Archived' : ''}</AppText></View>
         </View>
-        <View style={{ gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={14} tone="secondary">{wallet.archivedAt ? 'Archived balance' : 'Current balance'}</AppText><BalanceEye /></View><MoneyText value={wallet.balanceMinor} size={32} fit /></View>
+        <View style={{ gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={14} tone="secondary">{wallet.archivedAt ? 'Archived balance' : 'Current balance'}</AppText><BalanceEye target={wallet.id} /></View><MoneyText value={wallet.balanceMinor} size={32} fit hidden={hidden} /></View>
         {!wallet.archivedAt ? <Button label="Add money" disabled={disabled} onPress={() => router.push({ pathname: '/expense', params: { mode: 'income', walletId: wallet.id, from: 'manage' } })} /> : null}
         {!wallet.archivedAt && (overview?.wallets.length ?? 0) > 1 ? <Button label="Transfer" icon="transfer" variant="secondary" disabled={disabled} onPress={() => router.push({ pathname: '/transfer', params: { walletId: wallet.id, from: 'manage' } })} /> : null}
       </Surface>

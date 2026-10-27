@@ -17,7 +17,7 @@ function amountOrZero(input: string): number {
   try { return input.trim() ? parseAmount(input, true) : 0; } catch { return 0; }
 }
 
-function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, busy }: { label: string; wallets: Wallet[]; all: Wallet[]; selected: string; disabledId: string; onSelect: (id: string) => void; busy: boolean }) {
+function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, busy, hiddenIds }: { hiddenIds: string[]; label: string; wallets: Wallet[]; all: Wallet[]; selected: string; disabledId: string; onSelect: (id: string) => void; busy: boolean }) {
   const { colors } = useTheme();
   return <View style={{ gap: 10 }}><AppText size={14} weight="500">{label}</AppText>
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -29,7 +29,7 @@ function WalletChoices({ label, wallets, all, selected, disabledId, onSelect, bu
           style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderWidth: 1, borderRadius: 16, opacity: blocked ? 0.45 : 1,
             borderColor: checked ? colors.accent : colors.border, backgroundColor: checked ? colors.muted : colors.surface }}>
           <WalletBadge name={wallet.name} kind={wallet.kind} />
-          <View style={{ flexShrink: 1 }}><AppText size={14}>{walletLabel(wallet, all)}</AppText><MoneyText value={wallet.balanceMinor} size={12} style={{ fontWeight: '400' }} /></View>
+          <View style={{ flexShrink: 1 }}><AppText size={14}>{walletLabel(wallet, all)}</AppText><MoneyText value={wallet.balanceMinor} hidden={hiddenIds.includes(wallet.id)} size={12} style={{ fontWeight: '400' }} /></View>
           {checked ? <AppIcon name="check" size={16} color={colors.accent} /> : null}
         </Pressable>;
       })}
@@ -72,13 +72,13 @@ export function TransferScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.muted }}>
               <WalletBadge name={from.name} kind={from.kind} />
               <View style={{ flex: 1 }}><AppText size={16} weight="600">{walletLabel(from, all)}</AppText><AppText size={12} tone="secondary">{walletKindLabels[from.kind]} / PHP</AppText></View>
-              <View style={{ alignItems: 'flex-end' }}><AppText size={11} tone="secondary">Balance</AppText><MoneyText value={from.balanceMinor} size={16} /></View>
+              <View style={{ alignItems: 'flex-end' }}><AppText size={11} tone="secondary">Balance</AppText><MoneyText value={from.balanceMinor} hidden={overview.settings.hiddenBalances.includes(from.id)} size={16} /></View>
             </View>
-          </View> : <WalletChoices label="Send from" wallets={wallets} all={all} selected={form.fromWalletId} disabledId="" busy={form.busy}
+          </View> : <WalletChoices hiddenIds={overview.settings.hiddenBalances} label="Send from" wallets={wallets} all={all} selected={form.fromWalletId} disabledId="" busy={form.busy}
             onSelect={id => { form.setFromWalletId(id); if (id === form.toWalletId) form.setToWalletId(''); }} />}
           <FormField label="Amount (PHP)" placeholder="0.00" value={form.amount} onChangeText={form.setAmount} keyboardType="decimal-pad" autoFocus editable={!form.busy}
             style={{ fontSize: 40, minHeight: 92, fontVariant: ['tabular-nums'] }} />
-          <WalletChoices label="Send to" wallets={fixedSource ? wallets.filter(wallet => wallet.id !== form.fromWalletId) : wallets} all={all} selected={form.toWalletId} disabledId={form.fromWalletId} onSelect={form.setToWalletId} busy={form.busy} />
+          <WalletChoices hiddenIds={overview.settings.hiddenBalances} label="Send to" wallets={fixedSource ? wallets.filter(wallet => wallet.id !== form.fromWalletId) : wallets} all={all} selected={form.toWalletId} disabledId={form.fromWalletId} onSelect={form.setToWalletId} busy={form.busy} />
           <FormField label="Transfer fee" placeholder="0.00" value={form.fee} onChangeText={form.setFee} keyboardType="decimal-pad" editable={!form.busy} />
           {feeTooHigh ? <Feedback error>The fee can&apos;t be more than the amount you send.</Feedback> : null}
           {from && to && amount > 0 && !feeTooHigh ? <View testID="transfer-preview" style={{ gap: 6 }}>

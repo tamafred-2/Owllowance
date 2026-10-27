@@ -33,7 +33,7 @@ export function WalletBadge({ name, kind }: Pick<Wallet, 'name' | 'kind'>) {
 }
 
 // `balanceToggle` replaces the arrow beside BALANCE; it must stop its press from opening the card.
-export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balanceToggle }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void; balanceToggle?: (color: string) => ReactNode }) {
+export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balanceToggle, hidden = false }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void; balanceToggle?: (color: string) => ReactNode; hidden?: boolean }) {
   const menuButton = useRef<View>(null);
   const palette = walletAppearance(wallet.name, wallet.kind);
   return <View style={{ width: compact ? '48%' : '100%', borderRadius: 18, backgroundColor: palette.color }}>
@@ -45,7 +45,7 @@ export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balan
       </View>
       <View style={{ gap: 2, marginTop: 'auto' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>{balanceToggle ? <View style={{ margin: -9 }}>{balanceToggle(palette.ink)}</View> : <AppIcon name="expense" size={12} color={palette.ink} />}</View>
-        <MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} style={{ color: palette.ink }} />
+        <MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} hidden={hidden} style={{ color: palette.ink }} />
       </View>
     </Pressable>
   </Link>

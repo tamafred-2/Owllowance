@@ -3,7 +3,7 @@ import type {
   ActivityItem, Budget, BudgetCommand, CategoryCommand, EditEntryCommand, EntryCommand, HistoryFilter, LedgerRepository,
   ManagedCategory, OpeningCommand, Overview, Report, Settings, TransferCommand, Wallet,
 } from '../domain/ledger';
-import { defaultSettings } from '../domain/ledger';
+import { defaultSettings, NET_WORTH } from '../domain/ledger';
 import { assertEventTime, assertLocalDate, eventTime } from '../domain/date';
 import { addMinor, assertMinor, ValidationError } from '../domain/money';
 import { budgetWindow } from '../domain/budget';
@@ -135,7 +135,7 @@ async function readSettings(sql: SqlConnection): Promise<Settings> {
   const values = Object.fromEntries(rows.map(row => [row.key, row.value]));
   return {
     theme: values.theme === 'light' || values.theme === 'dark' ? values.theme : defaultSettings.theme,
-    hideBalances: values.hideBalances === '1',
+    hiddenBalances: rows.filter(row => row.key.startsWith('hide:') && row.value === '1').map(row => row.key.slice(5)),
     reduceMotion: values.reduceMotion === '1',
     lastBackupAt: values.lastBackupAt ?? null,
   };
@@ -170,7 +170,7 @@ async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promi
   await insert('transactions', records.transactions.filter(row => row.linked_id !== null));
   await insert('entries', records.entries);
   await insert('budgets', records.budgets);
-  await insert('settings', records.settings.filter(row => ['theme', 'hideBalances', 'reduceMotion', 'lastBackupAt'].includes(String(row.key))));
+  await insert('settings', records.settings.filter(row => ['theme', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
   if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new ValidationError("This backup can't be restored: its records don't match.");
 }
 
@@ -474,13 +474,21 @@ export class SqlLedgerRepository implements LedgerRepository {
     });
   }
 
-  saveSettings(settings: Partial<Settings>): Promise<void> {
+  // One row per masked balance keeps each value short.
+  setBalanceHidden(target: string, hidden: boolean): Promise<void> {
+    if (target !== NET_WORTH) assertId(target);
+    return this.database.transaction(async sql => {
+      if (hidden) await sql.runAsync("INSERT INTO settings (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'", `hide:${target}`);
+      else await sql.runAsync('DELETE FROM settings WHERE key = ?', `hide:${target}`);
+    });
+  }
+
+  saveSettings(settings: Partial<Omit<Settings, 'hiddenBalances'>>): Promise<void> {
     const rows: [string, string][] = [];
     if (settings.theme !== undefined) {
       if (!['system', 'light', 'dark'].includes(settings.theme)) throw new ValidationError('Choose a theme.');
       rows.push(['theme', settings.theme]);
     }
-    if (settings.hideBalances !== undefined) rows.push(['hideBalances', settings.hideBalances ? '1' : '0']);
     if (settings.reduceMotion !== undefined) rows.push(['reduceMotion', settings.reduceMotion ? '1' : '0']);
     if (settings.lastBackupAt !== undefined && settings.lastBackupAt !== null) {
       if (!Number.isFinite(Date.parse(settings.lastBackupAt))) throw new ValidationError('Invalid backup time.');
