@@ -7,6 +7,7 @@ import { AppIcon, type IconName } from '../design-system/icon';
 import { useTheme } from '../design-system/theme';
 import { useTracker } from '../features/tracker/presentation/tracker-context';
 import { OpeningScreen } from './opening-screen';
+import { OwlAddShape } from './owl-add-shape';
 import * as SplashScreen from 'expo-splash-screen';
 import { finishNativeLoading, hasNativeLoading } from '../platform/native-loading';
 
@@ -75,8 +76,8 @@ export function AppShell() {
         <NavItem href="/" label="Home" icon="home" compact />
         <NavItem href="/accounts" label="Wallet" icon="wallet" compact />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          {canAdd ? <Link href="/expense" asChild><Pressable accessibilityRole="link" accessibilityLabel="Add transaction" style={StyleSheet.flatten([styles.mobileAdd, { backgroundColor: colors.accent }])}>
-            <AppIcon name="add" color={colors.onAccent} size={28} />
+          {canAdd ? <Link href="/expense" asChild><Pressable accessibilityRole="link" accessibilityLabel="Add transaction" style={styles.mobileAdd}>
+            <OwlAddShape />
           </Pressable></Link> : null}
         </View>
         <NavItem href="/plan" label="Plan" icon="plan" compact={!wide} />
@@ -92,5 +93,5 @@ const styles = StyleSheet.create({
   topbar: { paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, gap: 2 },
   bottomBar: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 28, marginHorizontal: 12, marginBottom: 8, paddingHorizontal: 6, paddingVertical: 8 },
   add: { minHeight: 48, borderRadius: 8, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  mobileAdd: { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center' },
+  mobileAdd: { width: 60, height: 60, justifyContent: 'center', alignItems: 'center', marginTop: -8 },
 });
