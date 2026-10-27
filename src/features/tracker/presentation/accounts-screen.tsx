@@ -15,6 +15,7 @@ import { SavedFeedback } from './saved-feedback';
 import { walletLabel } from '../../../design-system/wallet-appearance';
 import { WalletSetup } from './wallet-setup';
 import { RenameWalletModal } from './rename-wallet-modal';
+import { BalanceEye } from './balance-eye';
 
 export function AccountsScreen() {
   const { overview, service, refresh, error: storageError } = useTracker();
@@ -61,7 +62,8 @@ export function AccountsScreen() {
             return <Surface style={{ padding: 14, gap: 6, width: '100%', maxWidth: 360, alignSelf: 'flex-end', backgroundColor: palette.background, borderColor: palette.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <AppIcon name="wallet" size={15} color={palette.secondary} />
-                <AppText size={11} weight="600" style={{ letterSpacing: 0.8, color: palette.secondary }}>NET WORTH</AppText>
+                <AppText size={11} weight="600" style={{ letterSpacing: 0.8, color: palette.secondary, flex: 1 }}>NET WORTH</AppText>
+                <BalanceEye color={palette.secondary} size={16} />
               </View>
               <MoneyText value={overview.totalBalanceMinor} size={24} fit style={{ color: palette.text }} />
             </Surface>;
@@ -80,7 +82,7 @@ export function AccountsScreen() {
         return <View key={kind} style={{ gap: 12 }}>
           <AppText size={14} weight="600" tone="secondary">{{ cash: 'Cash', ewallet: 'E-wallets', bank: 'Bank accounts' }[kind]}</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} />)}
+            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} balanceToggle={color => <BalanceEye color={color} size={14} />} />)}
           </View>
         </View>;
       })}
@@ -89,7 +91,7 @@ export function AccountsScreen() {
         <AppText size={20} weight="600">Archived wallets</AppText>
         <AppText size={14} tone="secondary">Balances remain included in your total.</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} />)}
+          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={walletLabel(wallet, [...overview.wallets, ...overview.archivedWallets])} compact={compact} onMenu={position => openMenu(wallet, position)} balanceToggle={color => <BalanceEye color={color} size={14} />} />)}
         </View>
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>

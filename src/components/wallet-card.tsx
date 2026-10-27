@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { MenuAnchor } from './anchored-menu';
 import { Image, Pressable, View, type ImageSourcePropType } from 'react-native';
 import type { Wallet } from '../domain/ledger';
@@ -32,7 +32,8 @@ export function WalletBadge({ name, kind }: Pick<Wallet, 'name' | 'kind'>) {
   </View>;
 }
 
-export function WalletCard({ wallet, compact, label = wallet.name, onMenu }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void }) {
+// `balanceToggle` replaces the arrow beside BALANCE; it must stop its press from opening the card.
+export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balanceToggle }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void; balanceToggle?: (color: string) => ReactNode }) {
   const menuButton = useRef<View>(null);
   const palette = walletAppearance(wallet.name, wallet.kind);
   return <View style={{ width: compact ? '48%' : '100%', borderRadius: 18, backgroundColor: palette.color }}>
@@ -43,7 +44,7 @@ export function WalletCard({ wallet, compact, label = wallet.name, onMenu }: { w
         <View style={{ flex: 1 }}><AppText size={13} weight="600" style={{ color: palette.ink }}>{label}</AppText><AppText size={10} style={{ color: palette.ink }}>{walletKindLabels[wallet.kind]} / PHP{wallet.archivedAt ? ' / Archived' : ''}</AppText></View>
       </View>
       <View style={{ gap: 2, marginTop: 'auto' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText><AppIcon name="expense" size={12} color={palette.ink} /></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>{balanceToggle ? <View style={{ margin: -9 }}>{balanceToggle(palette.ink)}</View> : <AppIcon name="expense" size={12} color={palette.ink} />}</View>
         <MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} style={{ color: palette.ink }} />
       </View>
     </Pressable>

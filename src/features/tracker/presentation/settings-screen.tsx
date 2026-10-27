@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { AppModal } from '../../../components/app-modal';
-import { AppText, Button, Chip, Feedback, MoneyText, Surface, ToggleRow } from '../../../design-system/primitives';
+import { AppText, Button, Chip, Feedback, MoneyText, Surface } from '../../../design-system/primitives';
 import { AppIcon } from '../../../design-system/icon';
 import { useTheme } from '../../../design-system/theme';
 import { parseBackup, type BackupEnvelope, type BackupPreview } from '../../../domain/backup';
@@ -73,11 +73,6 @@ export function SettingsScreen() {
           {([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as [ThemePreference, string][]).map(([value, label]) =>
             <Chip key={value} label={label} selected={settings?.theme === value} disabled={disabled} onPress={() => { void update({ theme: value }); }} />)}
         </View>
-        <ToggleRow label="Reduce motion" description="Keep the owl and scenes still." value={settings?.reduceMotion ?? false} disabled={disabled} onChange={value => { void update({ reduceMotion: value }); }} />
-      </Surface>
-      <Surface style={{ gap: 14 }}>
-        <AppText size={18} weight="600">Privacy</AppText>
-        <ToggleRow label="Hide balances" description="Mask amounts on screen, for example in public." value={settings?.hideBalances ?? false} disabled={disabled} onChange={value => { void update({ hideBalances: value }); }} />
       </Surface>
       <Pressable accessibilityRole="link" accessibilityLabel="Manage categories" onPress={() => router.push({ pathname: '/categories', params: { from: back } })}>
         <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

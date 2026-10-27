@@ -19,7 +19,7 @@ if (Platform.OS !== 'web') {
 // Stored preferences apply once local data opens; the system theme is used until then.
 function ThemedApp() {
   const settings = useTracker().overview?.settings;
-  const preferences = settings ? { theme: settings.theme, hideBalances: settings.hideBalances, reduceMotion: settings.reduceMotion } : undefined;
+  const preferences = settings ? { theme: settings.theme, hideBalances: settings.hideBalances, reduceMotion: false } : undefined;
   const dark = settings?.theme === 'dark' ? 'light' : settings?.theme === 'light' ? 'dark' : 'auto';
   return <ThemeProvider preferences={preferences}><StatusBar style={dark} /><AppShell /></ThemeProvider>;
 }

@@ -13,7 +13,7 @@ import { finishNativeLoading, hasNativeLoading } from '../platform/native-loadin
 function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activity' | '/accounts' | '/plan'; label: string; icon: IconName; compact?: boolean }) {
   const path = usePathname();
   const { colors } = useTheme();
-  const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage')) || (href === '/plan' && path === '/reports');
+  const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage'));
   return <Link href={href} asChild>
     <Pressable accessibilityRole="link" accessibilityState={{ selected: active }} style={{
       flexDirection: compact ? 'column' : 'row', gap: compact ? 4 : 12, alignItems: 'center',

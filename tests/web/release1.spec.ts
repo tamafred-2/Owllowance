@@ -133,19 +133,25 @@ test('budget progress, insights, custom category, hidden balances and theme pers
   await page.getByRole('button', { name: 'Save budget', exact: true }).click();
   await expect(page.getByTestId('budget-list')).toContainText('over');
   await page.screenshot({ path: testInfo.outputPath('plan-budget.png'), fullPage: true });
-  await page.getByRole('link', { name: 'Open insights', exact: true }).click();
+  await expect(page.getByText(/insights/i)).toHaveCount(0); // Insights opens only from Home.
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
   await expect(page.getByText('Spending by category', { exact: true })).toBeVisible();
   await expect(page.getByText('Coffee', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to Plan', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to Home', exact: true }).click();
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await expect(page.getByText('Reduce motion', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Privacy', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Dark', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Dark', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('switch', { name: 'Hide balances' }).click();
-  await expect(page.getByRole('switch', { name: 'Hide balances' })).toBeChecked();
-  await page.reload();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Plan', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Hide balances' })).toHaveCount(3); // Net worth + two cards.
+  await page.getByRole('button', { name: 'Hide balances' }).nth(1).click(); // The eye on the Cash card.
+  await expect(page.getByRole('heading', { name: 'Wallet', exact: true })).toBeVisible(); // Did not open the card.
+  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Show balances' }).first()).toBeVisible();
+  await page.reload();
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('₱ ••••');
   await expect(page.getByTestId('bottom-navigation')).toHaveCSS('background-color', 'rgb(34, 40, 51)');
   await page.screenshot({ path: testInfo.outputPath('hidden-dark.png'), fullPage: true });

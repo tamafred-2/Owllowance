@@ -31,7 +31,7 @@ export function ReportsScreen() {
   const topCategory = report?.byCategory[0]?.amountMinor ?? 1;
   return <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
     <View style={{ maxWidth: 720, width: '100%', alignSelf: 'center', gap: 20 }}>
-      <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Plan" icon="back" iconOnly variant="quiet" onPress={() => router.replace('/plan')} /></View>
+      <View style={{ alignSelf: 'flex-start' }}><Button label="Back to Home" icon="back" iconOnly variant="quiet" onPress={() => router.replace('/')} /></View>
       <AppText accessibilityRole="header" size={28} weight="600">Insights</AppText>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button label="Previous month" icon="previous" iconOnly variant="quiet" onPress={() => setMonth(monthStart(addDays(month, -1)))} />

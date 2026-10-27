@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { HeaderActions } from '../../../components/header-actions';
@@ -116,13 +115,6 @@ export function PlanScreen() {
           {canAdd ? <Button label="Create your first budget" icon="budgets" variant="secondary" onPress={() => setEditing('new')} /> : null}
         </View>}
       </Surface>
-      <Pressable accessibilityRole="link" accessibilityLabel="Open insights" onPress={() => router.push('/reports')}>
-        <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <AppIcon name="insights" size={24} color={colors.accent} />
-          <View style={{ flex: 1 }}><AppText weight="600">Insights</AppText><AppText size={13} tone="secondary">Spending by category and income vs expenses.</AppText></View>
-          <AppIcon name="next" color={colors.textSecondary} />
-        </Surface>
-      </Pressable>
       <Surface style={{ gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={18} weight="600">Goals & planned payments</AppText><AppText size={12} tone="secondary">Coming soon</AppText></View>
         <AppText size={13} tone="secondary">Savings goals, recurring bills and reminders will live here.</AppText>
