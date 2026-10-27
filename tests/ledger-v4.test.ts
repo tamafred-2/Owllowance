@@ -47,7 +47,7 @@ test('transfer moves money atomically, records fee as linked expense and exclude
   assert.equal(cashHistory.length, 2); // Opening + transfer; the fee is folded in.
   const report = await f.repository.report(time.localDate, addDays(time.localDate, 1));
   assert.deepEqual([report.incomeMinor, report.expenseMinor], [0, 1_500]);
-  await assert.rejects(f.repository.addTransfer({ ...command, amountMinor: 1 }), /different transaction/);
+  await assert.rejects(f.repository.addTransfer({ ...command, amountMinor: 20_001 }), /different transaction/);
 });
 
 test('transfer validation and mid-write failure leave balances unchanged', async t => {
@@ -55,6 +55,9 @@ test('transfer validation and mid-write failure leave balances unchanged', async
   assert.throws(() => f.repository.addTransfer({ ...f.transfer(100), toWalletId: f.setup.walletId }), /different wallets/);
   assert.throws(() => f.repository.addTransfer(f.transfer(0)), /greater than zero/);
   assert.throws(() => f.repository.addTransfer(f.transfer(100, -1)), /negative/);
+  assert.throws(() => f.repository.addTransfer(f.transfer(100, 101)), /more than the amount/);
+  await f.repository.addTransfer(f.transfer(100, 100)); // A fee equal to the amount is allowed.
+  await f.repository.deleteTransaction((await f.repository.history(0, 1, { type: 'transfer' }))[0].id, 1);
   const failing = f.transfer(10_000, 500);
   f.connection.failEntryAt = 2; // The destination entry fails after the source entry was written.
   await assert.rejects(f.repository.addTransfer(failing), /Injected/);

@@ -40,9 +40,12 @@ export class TrackerService {
     if (input.fromWalletId === input.toWalletId) throw new ValidationError('Choose two different wallets.');
     const note = input.note.trim();
     if (note.length > 500) throw new ValidationError('Keep notes within 500 characters.');
+    const amountMinor = parseAmount(input.amount);
+    const feeMinor = input.fee.trim() ? parseAmount(input.fee, true) : 0;
+    if (feeMinor > amountMinor) throw new ValidationError("The fee can't be more than the amount you send.");
     return {
       id: this.uuid(), toEntryId: this.uuid(), feeId: this.uuid(), fromWalletId: input.fromWalletId, toWalletId: input.toWalletId,
-      amountMinor: parseAmount(input.amount), feeMinor: input.fee.trim() ? parseAmount(input.fee, true) : 0, note, ...this.when(input.localDate),
+      amountMinor, feeMinor, note, ...this.when(input.localDate),
     };
   }
 

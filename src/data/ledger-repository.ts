@@ -307,6 +307,7 @@ export class SqlLedgerRepository implements LedgerRepository {
     assertEventTime(command); assertMinor(command.amountMinor); assertMinor(command.feeMinor); assertNote(command.note);
     if (command.amountMinor <= 0) throw new ValidationError('Amount must be greater than zero.');
     if (command.feeMinor < 0) throw new ValidationError('Fee cannot be negative.');
+    if (command.feeMinor > command.amountMinor) throw new ValidationError("The fee can't be more than the amount you send.");
     if (command.fromWalletId === command.toWalletId) throw new ValidationError('Choose two different wallets.');
     if (new Set([command.id, command.toEntryId, command.feeId]).size !== 3) throw new ValidationError('Invalid record identifier.');
     return this.database.transaction(async sql => {

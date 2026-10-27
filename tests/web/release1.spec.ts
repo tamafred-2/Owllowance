@@ -30,6 +30,9 @@ test('transfer with fee moves money, appears once in history and can be deleted'
   await page.getByLabel('Amount (PHP)', { exact: true }).fill('300');
   await page.getByRole('radio', { name: 'Send from: Cash', exact: true }).click();
   await page.getByRole('radio', { name: 'Send to: Savings', exact: true }).click();
+  await page.getByLabel('Transfer fee', { exact: true }).fill('1000');
+  await expect(page.getByText("The fee can't be more than the amount you send.", { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save transfer', exact: true })).toBeDisabled();
   await page.getByLabel('Transfer fee', { exact: true }).fill('15');
   await expect(page.getByTestId('transfer-preview')).toContainText('-₱315.00');
   await page.screenshot({ path: testInfo.outputPath('transfer-form.png'), fullPage: true });

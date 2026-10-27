@@ -58,6 +58,7 @@ export function TransferScreen() {
   // Opened from a wallet: that wallet is the fixed source and only the destination is chosen.
   const fixedSource = Boolean(originWalletId) && from?.id === originWalletId;
   const amount = amountOrZero(form.amount), fee = amountOrZero(form.fee);
+  const feeTooHigh = amount > 0 && fee > amount;
   return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <View style={{ maxWidth: 620, width: '100%', alignSelf: 'center', gap: 24 }}>
@@ -79,14 +80,15 @@ export function TransferScreen() {
             style={{ fontSize: 40, minHeight: 92, fontVariant: ['tabular-nums'] }} />
           <WalletChoices label="Send to" wallets={fixedSource ? wallets.filter(wallet => wallet.id !== form.fromWalletId) : wallets} all={all} selected={form.toWalletId} disabledId={form.fromWalletId} onSelect={form.setToWalletId} busy={form.busy} />
           <FormField label="Transfer fee" placeholder="0.00" value={form.fee} onChangeText={form.setFee} keyboardType="decimal-pad" editable={!form.busy} />
-          {from && to && amount > 0 ? <View testID="transfer-preview" style={{ gap: 6 }}>
+          {feeTooHigh ? <Feedback error>The fee can&apos;t be more than the amount you send.</Feedback> : null}
+          {from && to && amount > 0 && !feeTooHigh ? <View testID="transfer-preview" style={{ gap: 6 }}>
             <AppText size={14} weight="600">Preview</AppText>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}><AppText size={13} tone="secondary" style={{ flexShrink: 1 }}>{walletLabel(from, all)}</AppText><MoneyText value={-(amount + fee)} size={14} /></View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}><AppText size={13} tone="secondary" style={{ flexShrink: 1 }}>{walletLabel(to, all)}</AppText><MoneyText value={amount} size={14} /></View>
             {fee ? <AppText size={12} tone="secondary">Includes the fee.</AppText> : null}
           </View> : null}
           {form.error ? <Feedback error>{form.error}</Feedback> : null}
-          <Button label="Save transfer" icon="check" busy={form.busy} disabled={Boolean(error)} onPress={() => { void form.submit(); }} />
+          <Button label="Save transfer" icon="check" busy={form.busy} disabled={Boolean(error) || feeTooHigh} onPress={() => { void form.submit(); }} />
         </Surface>
       </View>
     </ScrollView>

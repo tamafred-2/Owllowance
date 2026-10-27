@@ -84,7 +84,10 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
           {editing ? <Button label="Duplicate" icon="duplicate" iconOnly variant="quiet" disabled={busy}
             onPress={() => router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ padding: 10, borderRadius: 14, backgroundColor: colors.muted }}><AppIcon name={mode} color={colors.accent} /></View><AppText accessibilityRole="header" size={28} weight="600">{heading}</AppText></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}><View style={{ padding: 10, borderRadius: 14, backgroundColor: colors.muted }}><AppIcon name={mode} color={colors.accent} /></View><AppText accessibilityRole="header" size={28} weight="600">{heading}</AppText></View>
+          <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={busy} />
+        </View>
         {!editing ? <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.muted }}>
           {(['expense', 'income'] as const).map(type => <Pressable key={type} accessibilityRole="tab" accessibilityLabel={type === 'expense' ? 'Expense' : 'Income'} accessibilityState={{ selected: mode === type, disabled: busy }} aria-selected={mode === type} disabled={busy}
             onPress={() => { const target = type === 'expense' ? expenseForm : incomeForm; target.setWalletId(form.walletId); target.setLocalDate(form.localDate); setMode(type); }}
@@ -120,7 +123,6 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
             </View>
             {form.wallet ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><AppText size={12} tone="secondary">Current balance</AppText><MoneyText value={form.wallet.balanceMinor} size={14} /></View> : null}
           </View>
-          <DateField label="Date" value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={busy} />
           {showNote ? <FormField label="Note (optional)" value={form.note} onChangeText={form.setNote} maxLength={500} multiline editable={!busy} placeholder="What was it for?" /> :
             <Button label="Add a note" icon="add" variant="quiet" disabled={busy} onPress={() => setShowNote(true)} />}
           {form.error ? <Feedback error>{form.error}</Feedback> : null}
