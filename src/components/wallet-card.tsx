@@ -32,7 +32,7 @@ export function WalletBadge({ name, kind }: Pick<Wallet, 'name' | 'kind'>) {
   </View>;
 }
 
-// `balanceToggle` replaces the arrow beside BALANCE; it must stop its press from opening the card.
+// `balanceToggle` sits beside the amount (replacing the arrow); it must stop its press from opening the card.
 export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balanceToggle, hidden = false }: { wallet: Wallet; compact: boolean; label?: string; onMenu: (anchor: MenuAnchor) => void; balanceToggle?: (color: string) => ReactNode; hidden?: boolean }) {
   const menuButton = useRef<View>(null);
   const palette = walletAppearance(wallet.name, wallet.kind);
@@ -44,8 +44,11 @@ export function WalletCard({ wallet, compact, label = wallet.name, onMenu, balan
         <View style={{ flex: 1 }}><AppText size={13} weight="600" style={{ color: palette.ink }}>{label}</AppText><AppText size={10} style={{ color: palette.ink }}>{walletKindLabels[wallet.kind]} / PHP{wallet.archivedAt ? ' / Archived' : ''}</AppText></View>
       </View>
       <View style={{ gap: 2, marginTop: 'auto' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>{balanceToggle ? <View style={{ margin: -9 }}>{balanceToggle(palette.ink)}</View> : <AppIcon name="expense" size={12} color={palette.ink} />}</View>
-        <MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} hidden={hidden} style={{ color: palette.ink }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={10} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>{balanceToggle ? null : <AppIcon name="expense" size={12} color={palette.ink} />}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ flex: 1 }}><MoneyText value={wallet.balanceMinor} size={compact ? 21 : 28} hidden={hidden} style={{ color: palette.ink }} /></View>
+          {balanceToggle ? <View style={{ marginRight: -8 }}>{balanceToggle(palette.ink)}</View> : null}
+        </View>
       </View>
     </Pressable>
   </Link>

@@ -14,7 +14,7 @@ type ViewProps = {
   label: (wallet: Wallet) => string;
   onMenu: (wallet: Wallet, anchor: MenuAnchor) => void;
   hidden: (wallet: Wallet) => boolean;
-  balanceToggle: (wallet: Wallet, color: string) => ReactNode;
+  balanceToggle: (wallet: Wallet, color: string, size?: number) => ReactNode;
 };
 
 function MenuButton({ wallet, label, color, onMenu }: { wallet: Wallet; label: string; color: string; onMenu: ViewProps['onMenu'] }) {
@@ -40,7 +40,7 @@ export function WalletRow({ wallet, label, onMenu, hidden, balanceToggle }: View
         <MoneyText value={wallet.balanceMinor} size={16} hidden={hidden(wallet)} />
       </Pressable>
     </Link>
-    {balanceToggle(wallet, colors.textSecondary)}
+    {balanceToggle(wallet, colors.textSecondary, 18)}
     <MenuButton wallet={wallet} label={name} color={colors.textSecondary} onMenu={onMenu} />
   </View>;
 }
@@ -142,11 +142,11 @@ function DeckCard({ wallet, label, onMenu, hidden, balanceToggle, swallowPress, 
           </View>
         </View>
         <View style={{ gap: 2 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <AppText size={11} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>
-            <View style={{ margin: -9 }}>{balanceToggle(wallet, palette.ink)}</View>
+          <AppText size={11} weight="500" style={{ color: palette.ink, letterSpacing: 1 }}>BALANCE</AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flex: 1 }}><MoneyText value={wallet.balanceMinor} size={30} fit hidden={hidden(wallet)} style={{ color: palette.ink }} /></View>
+            <View style={{ marginRight: -6 }}>{balanceToggle(wallet, palette.ink, 22)}</View>
           </View>
-          <MoneyText value={wallet.balanceMinor} size={30} fit hidden={hidden(wallet)} style={{ color: palette.ink }} />
         </View>
       </Pressable>
     </Link>

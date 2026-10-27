@@ -57,7 +57,7 @@ export function AccountsScreen() {
     label: (wallet: Wallet) => walletLabel(wallet, allWallets),
     onMenu: (wallet: Wallet, position: MenuAnchor) => openMenu(wallet, position),
     hidden: (wallet: Wallet) => overview.settings.hiddenBalances.includes(wallet.id),
-    balanceToggle: (wallet: Wallet, color: string) => <BalanceEye target={wallet.id} color={color} size={14} />,
+    balanceToggle: (wallet: Wallet, color: string, size = 18) => <BalanceEye target={wallet.id} color={color} size={size} />,
   };
   if (!overview.wallet && !overview.archivedWallets.length) return <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}><WalletSetup /></ScrollView>;
   return <ScrollView scrollEnabled={!deckDragging} showsVerticalScrollIndicator={false} onScroll={event => setSceneVisible(event.nativeEvent.contentOffset.y < 300)} scrollEventThrottle={100}
@@ -112,7 +112,7 @@ export function AccountsScreen() {
           <AppText size={14} weight="600" tone="secondary">{{ cash: 'Cash', ewallet: 'E-wallets', bank: 'Bank accounts' }[kind]}</AppText>
           {view === 'list' ? <View>{wallets.map(wallet => <WalletRow key={wallet.id} wallet={wallet} {...viewProps} />)}</View> :
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={viewProps.label(wallet)} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={viewProps.hidden(wallet)} balanceToggle={color => viewProps.balanceToggle(wallet, color)} />)}
+            {wallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={viewProps.label(wallet)} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={viewProps.hidden(wallet)} balanceToggle={color => viewProps.balanceToggle(wallet, color, 18)} />)}
           </View>}
         </View>;
       })}
@@ -121,7 +121,7 @@ export function AccountsScreen() {
         <AppText size={20} weight="600">Archived wallets</AppText>
         <AppText size={14} tone="secondary">Balances remain included in your total.</AppText>
         {view === 'grid' ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={viewProps.label(wallet)} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={viewProps.hidden(wallet)} balanceToggle={color => viewProps.balanceToggle(wallet, color)} />)}
+          {overview.archivedWallets.map(wallet => <WalletCard key={wallet.id} wallet={wallet} label={viewProps.label(wallet)} compact={compact} onMenu={position => openMenu(wallet, position)} hidden={viewProps.hidden(wallet)} balanceToggle={color => viewProps.balanceToggle(wallet, color, 18)} />)}
         </View> : <View>{overview.archivedWallets.map(wallet => <WalletRow key={wallet.id} wallet={wallet} {...viewProps} />)}</View>}
       </View> : null}
       {menuWallet && anchor && !confirmArchive ? <AnchoredMenu anchor={anchor} onClose={() => { if (!busy) setMenuWallet(null); }}>
