@@ -97,10 +97,10 @@ export function ActivityScreen() {
   const header = <View style={{ gap: 12, paddingBottom: 8 }}>
     <SavedFeedback saved={saved} />
     <FormField label="Search" placeholder="Note, category or wallet" value={search} onChangeText={setSearch} maxLength={100} returnKeyType="search" />
-    <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-      <Chip label={showFilters ? 'Hide filters' : active ? 'Filters on' : 'Filters'} icon="filter" selected={active} onPress={() => setShowFilters(value => !value)} />
-      {active ? <Chip label="Clear" icon="close" selected={false} onPress={() => { setType(undefined); setWalletId(undefined); setCategoryId(undefined); setSearch(''); setQuery(''); setPeriod('all'); }} /> : null}
-      <Chip label={exporting ? 'Exporting…' : 'Export CSV'} icon="download" selected={false} disabled={exporting} onPress={() => { void exportCsv(); }} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Chip label={showFilters ? 'Hide filters' : 'Filters'} icon="filter" selected={active} onPress={() => setShowFilters(value => !value)} />
+      {active ? <Chip label="Clear filters" icon="close" iconOnly selected={false} onPress={() => { setType(undefined); setWalletId(undefined); setCategoryId(undefined); setSearch(''); setQuery(''); setPeriod('all'); }} /> : null}
+      <View style={{ marginLeft: 'auto' }}><Chip label={exporting ? 'Exporting…' : 'Export CSV'} icon="download" selected={false} disabled={exporting} onPress={() => { void exportCsv(); }} /></View>
     </View>
     {exportMessage ? <Feedback error={exportMessage.error}>{exportMessage.text}</Feedback> : null}
     {showFilters ? <View testID="history-filters" style={{ gap: 12 }}>

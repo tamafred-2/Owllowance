@@ -20,13 +20,14 @@ export function MoneyText({ value, size = 24, style, fit = false }: { value: num
     accessibilityLabel={hideBalances ? 'Amount hidden' : undefined} style={[{ fontVariant: ['tabular-nums'] }, style]}>{hideBalances ? '₱ ••••' : formatMoney(value)}</AppText>;
 }
 
-export function Chip({ label, selected, onPress, icon, disabled = false }: { label: string; selected: boolean; onPress: () => void; icon?: IconName; disabled?: boolean }) {
+// `iconOnly` keeps the label for screen readers and shows a round icon button.
+export function Chip({ label, selected, onPress, icon, disabled = false, iconOnly = false }: { label: string; selected: boolean; onPress: () => void; icon?: IconName; disabled?: boolean; iconOnly?: boolean }) {
   const { colors } = useTheme();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected, disabled }} aria-pressed={selected} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => ({ minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
+    style={({ pressed }) => ({ minHeight: 40, minWidth: iconOnly ? 40 : undefined, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: iconOnly ? 0 : 14, borderRadius: 20, borderWidth: 1,
       borderColor: selected ? colors.accent : colors.border, backgroundColor: selected ? colors.accent : colors.surface, opacity: disabled ? 0.55 : pressed ? 0.8 : 1 })}>
     {icon ? <AppIcon name={icon} size={16} color={selected ? colors.onAccent : colors.textSecondary} /> : null}
-    <AppText size={13} weight="600" style={{ color: selected ? colors.onAccent : colors.textPrimary }}>{label}</AppText>
+    {!iconOnly ? <AppText size={13} weight="600" style={{ color: selected ? colors.onAccent : colors.textPrimary }}>{label}</AppText> : null}
   </Pressable>;
 }
 

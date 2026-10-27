@@ -74,7 +74,7 @@ test('transfer opened from a wallet shows that wallet as the fixed source', asyn
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,050.00');
 });
 
-test('edit, duplicate and delete an expense; history filters and search narrow results', async ({ page }) => {
+test('edit, duplicate and delete an expense; history filters and search narrow results', async ({ page }, testInfo) => {
   await setup(page);
   await addExpense(page, '50');
   await page.getByRole('link', { name: 'History', exact: true }).click();
@@ -98,7 +98,12 @@ test('edit, duplicate and delete an expense; history filters and search narrow r
   await page.getByRole('button', { name: 'Filters', exact: true }).click();
   await page.getByRole('button', { name: 'Income', exact: true }).click();
   await expect(page.getByText('No matches', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  // Filters, Clear and Export stay on one line at phone width.
+  const rowY = async (name: string) => (await page.getByRole('button', { name, exact: true }).boundingBox())!.y;
+  expect(Math.abs(await rowY('Export CSV') - await rowY('Hide filters'))).toBeLessThan(4);
+  expect(Math.abs(await rowY('Clear filters') - await rowY('Hide filters'))).toBeLessThan(4);
+  await page.screenshot({ path: testInfo.outputPath('history-filter-row.png') });
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await page.getByText('Team lunch', { exact: true }).first().click();
   await page.getByRole('button', { name: 'Delete expense', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm delete', exact: true }).click();
