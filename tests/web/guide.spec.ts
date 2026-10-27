@@ -19,6 +19,7 @@ test('first-run guide walks through the main features once and reopens from Sett
   await page.screenshot({ path: testInfo.outputPath('guide-5.png') });
   await page.getByRole('button', { name: 'Get started', exact: true }).click();
   await expect(guide).toHaveCount(0);
+  await page.waitForTimeout(600); // Let the "guide seen" setting finish saving before reloading.
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
   await expect(guide).toHaveCount(0); // Shown once.
