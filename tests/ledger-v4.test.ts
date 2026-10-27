@@ -35,10 +35,16 @@ test('transfer moves money atomically, records fee as linked expense and exclude
   const transferRows = all.filter(item => item.type === 'transfer');
   assert.equal(transferRows.length, 1);
   assert.deepEqual([transferRows[0].walletName, transferRows[0].counterpartyName, transferRows[0].amountMinor], ['Cash', 'Savings', -20_000]);
-  const fee = all.find(item => item.linkedId === command.id);
+  assert.equal(all.some(item => item.linkedId), false); // Fee folds into its transfer row.
+  assert.equal(transferRows[0].feeMinor, 1_500);
+  const fee = (await f.repository.history(0, 20, { type: 'expense' })).find(item => item.linkedId === command.id);
   assert.equal(fee?.categoryName, 'Fees'); assert.equal(fee?.amountMinor, -1_500);
+  assert.equal((await f.repository.history(0, 20, { separateFees: true })).length, all.length + 1);
   const savingsHistory = await f.repository.history(0, 20, f.savings.walletId);
-  assert.deepEqual(savingsHistory.filter(item => item.type === 'transfer').map(item => [item.amountMinor, item.counterpartyName]), [[20_000, 'Cash']]);
+  assert.deepEqual(savingsHistory.filter(item => item.type === 'transfer').map(item => [item.amountMinor, item.counterpartyName, item.feeMinor]), [[20_000, 'Cash', null]]);
+  const cashHistory = await f.repository.history(0, 20, f.setup.walletId);
+  assert.deepEqual(cashHistory.filter(item => item.type === 'transfer').map(item => [item.amountMinor, item.feeMinor]), [[-20_000, 1_500]]);
+  assert.equal(cashHistory.length, 2); // Opening + transfer; the fee is folded in.
   const report = await f.repository.report(time.localDate, addDays(time.localDate, 1));
   assert.deepEqual([report.incomeMinor, report.expenseMinor], [0, 1_500]);
   await assert.rejects(f.repository.addTransfer({ ...command, amountMinor: 1 }), /different transaction/);
@@ -253,7 +259,7 @@ test('corrupt or unsupported backups are rejected before live data changes', asy
 });
 
 test('CSV export quotes text and neutralizes spreadsheet formulas', () => {
-  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null };
+  const base = { occurredAt: '', timeZone: 'Asia/Manila', offsetMinutes: 480, revision: 1, walletId: '', categoryId: null, iconKey: null, colorToken: null, linkedId: null, feeMinor: null };
   const csv = transactionsCsv([
     { ...base, id: '1', type: 'expense', localDate: '2026-10-14', note: '=HYPERLINK("x")', amountMinor: -1205, walletName: 'Cash, main', categoryName: 'Food', counterpartyName: null },
     { ...base, id: '2', type: 'transfer', localDate: '2026-10-14', note: '', amountMinor: 5, walletName: '+Bank', categoryName: null, counterpartyName: 'Cash' },

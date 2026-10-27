@@ -34,7 +34,7 @@ export function RenameWalletModal({ wallet, onClose }: { wallet: Wallet; onClose
       <Button label="Back to editing" variant="secondary" disabled={busy} onPress={() => setConfirmRename(false)} />
     </> : <>
       <FormField label="Wallet name" value={name} onChangeText={value => { setName(value); setError(null); }} maxLength={60} editable={!disabled} autoFocus />
-      <Button label="Save name" disabled={disabled} onPress={() => {
+      <Button label="Save" disabled={disabled} onPress={() => {
         try {
           validateWalletName(name, [...(overview?.wallets ?? []), ...(overview?.archivedWallets ?? [])], wallet.id);
           Keyboard.dismiss(); setError(null); setConfirmRename(true);

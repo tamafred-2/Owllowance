@@ -78,8 +78,8 @@ export function ActivityScreen() {
     if (!service || exporting) return;
     setExporting(true); setExportMessage(null);
     try {
-      // Everything matching the current filter; a transfer is one row naming both wallets.
-      const base: HistoryFilter = JSON.parse(filterKey);
+      // Everything matching the current filter; a transfer is one row naming both wallets and its fee is its own expense row.
+      const base: HistoryFilter = { ...JSON.parse(filterKey), separateFees: true };
       const rows: ActivityItem[] = [];
       for (let start = 0; ; start += 100) {
         const page = await service.repository.history(start, 100, base);

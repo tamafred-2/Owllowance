@@ -53,7 +53,7 @@ def main():
         runner.tap('Wallet')
         runner.tap('Manage Smoke bank', scroll=True)
         runner.fill('Wallet name', 'Everyday bank')
-        runner.tap('Save name', scroll=True)
+        runner.tap('Save', scroll=True)
         runner.wait_for('Your wallets, in one view.')
         runner.tap('Manage Everyday bank', scroll=True)
         runner.tap('Archive wallet', scroll=True)

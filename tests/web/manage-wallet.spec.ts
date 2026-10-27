@@ -72,7 +72,7 @@ test('wallet dropdown stays beside its trigger and opens wallet-specific actions
   await page.getByRole('button', { name: 'Edit name', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Edit wallet name', exact: true })).toBeVisible();
   await page.getByLabel('Wallet name', { exact: true }).fill('Pocket');
-  await page.getByRole('button', { name: 'Save name', exact: true }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm rename', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toHaveCount(0);
   const renamed = page.getByRole('button', { name: 'Wallet options: Pocket', exact: true });

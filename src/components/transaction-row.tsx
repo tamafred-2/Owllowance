@@ -30,9 +30,15 @@ export function TransactionRow({ item, walletHistory = false, onPress }: { item:
       <AppText size={12} tone="secondary">{walletHistory || item.type === 'transfer' ? displayDate(item.localDate) : `${item.walletName} · ${displayDate(item.localDate)}`}</AppText>
       {item.note ? <AppText size={12} tone="secondary" numberOfLines={2}>{item.note}</AppText> : null}
     </View>
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {positive ? <AppText size={16} tone="success">+</AppText> : null}
-      <MoneyText value={neutral ? Math.abs(item.amountMinor) : item.amountMinor} size={16} style={positive ? { color: colors.success } : undefined} />
+    <View style={{ alignItems: 'flex-end' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {positive ? <AppText size={16} tone="success">+</AppText> : null}
+        <MoneyText value={neutral ? Math.abs(item.amountMinor) : item.amountMinor} size={16} style={positive ? { color: colors.success } : undefined} />
+      </View>
+      {item.feeMinor ? <View testID="transfer-fee" style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <MoneyText value={-item.feeMinor} size={11} style={{ fontWeight: '400', color: colors.textSecondary }} />
+        <AppText size={11} tone="secondary">fee</AppText>
+      </View> : null}
     </View>
   </>;
   const style = { flexDirection: 'row' as const, flexWrap: 'wrap' as const, alignItems: 'center' as const, gap: 12, paddingVertical: 18, borderBottomWidth: 1, borderColor: colors.border };

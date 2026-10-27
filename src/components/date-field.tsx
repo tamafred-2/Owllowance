@@ -10,7 +10,8 @@ const weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const monthLabel = (localDate: string) => new Intl.DateTimeFormat('en-PH', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${localDate}T12:00:00Z`));
 
 // Calendar picker on YYYY-MM-DD strings; `max` (inclusive) blocks later days.
-export function DateField({ label, value, onChange, max, disabled = false }: { label: string; value: string; onChange: (value: string) => void; max?: string; disabled?: boolean }) {
+// `compact` renders a small chip (for headers) instead of a labelled field.
+export function DateField({ label, value, onChange, max, disabled = false, compact = false }: { label: string; value: string; onChange: (value: string) => void; max?: string; disabled?: boolean; compact?: boolean }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(monthStart(value));
@@ -19,12 +20,20 @@ export function DateField({ label, value, onChange, max, disabled = false }: { l
   const days: string[] = [];
   for (let day = month; day < nextMonthStart(month); day = addDays(day, 1)) days.push(day);
   const caption = value === today ? `Today, ${displayDate(value)}` : value === addDays(today, -1) ? `Yesterday, ${displayDate(value)}` : displayDate(value);
+  const short = value === today ? 'Today' : value === addDays(today, -1) ? 'Yesterday' : displayDate(value);
+  const openPicker = () => { setMonth(monthStart(value)); setOpen(true); };
   return <View style={{ gap: 8 }}>
-    <AppText size={14} weight="500">{label}</AppText>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${caption}`} disabled={disabled} onPress={() => { setMonth(monthStart(value)); setOpen(true); }}
-      style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, borderColor: colors.border, backgroundColor: colors.surface, opacity: disabled ? 0.55 : 1 }}>
-      <AppIcon name="plan" size={18} color={colors.accent} /><AppText size={16}>{caption}</AppText>
-    </Pressable>
+    {compact ? <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${caption}`} disabled={disabled} onPress={openPicker} hitSlop={6}
+      style={({ pressed }) => ({ minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 18, paddingHorizontal: 12,
+        borderColor: colors.border, backgroundColor: colors.surface, opacity: disabled ? 0.55 : pressed ? 0.8 : 1 })}>
+      <AppIcon name="plan" size={14} color={colors.accent} /><AppText size={13} weight="500">{short}</AppText>
+    </Pressable> : <>
+      <AppText size={14} weight="500">{label}</AppText>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${caption}`} disabled={disabled} onPress={openPicker}
+        style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, borderColor: colors.border, backgroundColor: colors.surface, opacity: disabled ? 0.55 : 1 }}>
+        <AppIcon name="plan" size={18} color={colors.accent} /><AppText size={16}>{caption}</AppText>
+      </Pressable>
+    </>}
     <AppModal title={label} visible={open} onClose={() => setOpen(false)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Button label="Previous month" icon="previous" iconOnly variant="quiet" onPress={() => setMonth(monthStart(addDays(month, -1)))} />

@@ -14,10 +14,14 @@ export type ActivityItem = EventTime & {
   categoryId: string | null; categoryName: string | null; iconKey: string | null; colorToken: string | null;
   // Transfers: the other wallet. Fee expenses: the transfer they belong to.
   counterpartyName: string | null; linkedId: string | null;
+  // Transfers: the linked fee charged to this row's wallet (source side only).
+  feeMinor: number | null;
 };
 export type HistoryFilter = {
   walletId?: string; type?: 'expense' | 'income' | 'transfer'; categoryId?: string;
   fromDate?: string; toDateExclusive?: string; search?: string; linkedId?: string;
+  // Lists fee expenses as their own rows (exports) instead of folding them into transfers.
+  separateFees?: boolean;
 };
 export type BudgetPeriod = 'monthly' | 'weekly' | 'custom';
 export type Budget = {

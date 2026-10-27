@@ -30,13 +30,17 @@ const activitySelect = `SELECT t.id, t.type, t.occurred_at AS occurredAt,
   t.note, t.revision, t.linked_id AS linkedId, e.amount_minor AS amountMinor, a.id AS walletId, a.name AS walletName,
   t.category_id AS categoryId, c.name AS categoryName, c.icon_key AS iconKey, c.color_token AS colorToken,
   CASE WHEN t.type = 'transfer' THEN (SELECT a2.name FROM entries e2 JOIN accounts a2 ON a2.id = e2.account_id
-    WHERE e2.transaction_id = t.id AND e2.id <> e.id) END AS counterpartyName
+    WHERE e2.transaction_id = t.id AND e2.id <> e.id) END AS counterpartyName,
+  CASE WHEN t.type = 'transfer' THEN (SELECT -SUM(e4.amount_minor) FROM transactions t4 JOIN entries e4 ON e4.transaction_id = t4.id
+    WHERE t4.linked_id = t.id AND e4.account_id = e.account_id) END AS feeMinor
   FROM transactions t JOIN entries e ON e.transaction_id = t.id
   JOIN accounts a ON a.id = e.account_id LEFT JOIN categories c ON c.id = t.category_id`;
 // Without a wallet filter a transfer appears once, from its source side.
 const singleTransferRow = "NOT (t.type = 'transfer' AND e.amount_minor > 0)";
 const activityOrder = ' ORDER BY t.local_date DESC, t.occurred_at DESC, t.id DESC LIMIT ? OFFSET ?';
-const activityQuery = `${activitySelect} WHERE ${singleTransferRow}${activityOrder}`;
+// Fee expenses are shown inside their transfer row.
+const foldedFees = 't.linked_id IS NULL';
+const activityQuery = `${activitySelect} WHERE ${singleTransferRow} AND ${foldedFees}${activityOrder}`;
 
 function assertId(id: string): void {
   if (!/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(id)) {
@@ -104,6 +108,8 @@ function historyWhere(filter: HistoryFilter): { clause: string; params: SqlValue
   const params: SqlValue[] = [];
   if (filter.walletId) { assertId(filter.walletId); conditions.push('a.id = ?'); params.push(filter.walletId); }
   else conditions.push(singleTransferRow);
+  // Expense/category filters and exports still list fees on their own.
+  if (!filter.separateFees && !filter.linkedId && filter.type !== 'expense' && !filter.categoryId) conditions.push(foldedFees);
   if (filter.type) {
     if (!['expense', 'income', 'transfer'].includes(filter.type)) throw new ValidationError('Invalid history filter.');
     conditions.push('t.type = ?'); params.push(filter.type);
