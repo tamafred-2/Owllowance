@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 async function expectBalance(page: Page, amount: string) {
   if (new URL(page.url()).pathname === '/expense' || new URL(page.url()).pathname === '/') {

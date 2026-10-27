@@ -139,6 +139,7 @@ async function readSettings(sql: SqlConnection): Promise<Settings> {
     walletView: values.walletView === 'list' || values.walletView === 'cards' ? values.walletView : defaultSettings.walletView,
     deckWallet: values.deckWallet ?? null,
     reminders: values.reminders === '1',
+    guideSeen: values.guideSeen === '1',
     hiddenBalances: rows.filter(row => row.key.startsWith('hide:') && row.value === '1').map(row => row.key.slice(5)),
     reduceMotion: values.reduceMotion === '1',
     lastBackupAt: values.lastBackupAt ?? null,
@@ -176,7 +177,7 @@ async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promi
   await insert('budgets', records.budgets);
   await insert('recurring', records.recurring);
   await insert('recurring_occurrences', records.recurring_occurrences);
-  await insert('settings', records.settings.filter(row => ['theme', 'walletView', 'deckWallet', 'reminders', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
+  await insert('settings', records.settings.filter(row => ['theme', 'walletView', 'deckWallet', 'reminders', 'guideSeen', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
   if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new ValidationError("This backup can't be restored: its records don't match.");
 }
 
@@ -531,6 +532,7 @@ export class SqlLedgerRepository implements LedgerRepository {
     }
     if (settings.deckWallet !== undefined && settings.deckWallet !== null) { assertId(settings.deckWallet); rows.push(['deckWallet', settings.deckWallet]); }
     if (settings.reminders !== undefined) rows.push(['reminders', settings.reminders ? '1' : '0']);
+    if (settings.guideSeen !== undefined) rows.push(['guideSeen', settings.guideSeen ? '1' : '0']);
     if (settings.reduceMotion !== undefined) rows.push(['reduceMotion', settings.reduceMotion ? '1' : '0']);
     if (settings.lastBackupAt !== undefined && settings.lastBackupAt !== null) {
       if (!Number.isFinite(Date.parse(settings.lastBackupAt))) throw new ValidationError('Invalid backup time.');

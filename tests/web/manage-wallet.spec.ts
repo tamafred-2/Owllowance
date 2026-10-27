@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('Manage wallet keeps rename optional and adds income to the chosen wallet', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('Home shows honest placeholders, daily cash flow and responsive navigation', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });

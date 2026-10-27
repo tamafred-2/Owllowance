@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('income and expense tabs retain drafts and post to the selected wallet offline', async ({ page, context }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });

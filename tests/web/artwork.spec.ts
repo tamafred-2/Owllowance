@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('ready data waits for the opening GIF to load and finish', async ({ page }) => {
   let release!: () => void;

@@ -11,6 +11,7 @@ import { OwlAddShape } from './owl-add-shape';
 import { SheetHost } from '../features/tracker/presentation/entry-sheet';
 import { useOpenSheet } from '../features/tracker/presentation/sheet-context';
 import { useReminderSync } from '../features/tracker/presentation/reminders';
+import { GettingStartedGate } from '../features/tracker/presentation/getting-started';
 import * as SplashScreen from 'expo-splash-screen';
 import { finishNativeLoading, hasNativeLoading } from '../platform/native-loading';
 
@@ -18,18 +19,20 @@ function NavItem({ href, label, icon, compact = false }: { href: '/' | '/activit
   const path = usePathname();
   const { colors, isDark } = useTheme();
   const active = path === href || (href === '/accounts' && (path === '/wallet-new' || path === '/wallet-manage'));
-  // A soft accent tint marks the current tab; Android adds its ripple on press.
+  // A soft round accent pill marks the current tab; pressing fades it (no rectangular ripple).
   const tint = isDark ? 'rgba(164, 198, 232, 0.18)' : 'rgba(36, 71, 107, 0.12)';
   return <Link href={href} asChild>
-    <Pressable accessibilityRole="link" accessibilityState={{ selected: active }} android_ripple={{ color: tint, borderless: true, radius: 34 }} style={{
+    <Pressable accessibilityRole="link" accessibilityState={{ selected: active }} style={{
       flexDirection: compact ? 'column' : 'row', gap: compact ? 4 : 12, alignItems: 'center',
       padding: compact ? 4 : 14, minHeight: 56, borderRadius: 16, flex: compact ? 1 : undefined, minWidth: 0,
       backgroundColor: active && !compact ? tint : 'transparent',
     }}>
-      <View style={compact ? { width: 56, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? tint : 'transparent' } : undefined}>
-        <AppIcon name={icon} size={active ? 22 : 20} color={active ? colors.accent : colors.textSecondary} />
-      </View>
-      <AppText size={compact ? 11 : 14} weight={active ? '700' : '400'} style={{ color: active ? colors.accent : colors.textSecondary }}>{label}</AppText>
+      {({ pressed }) => <>
+        <View style={compact ? { width: 56, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: active || pressed ? tint : 'transparent', opacity: pressed ? 0.7 : 1 } : undefined}>
+          <AppIcon name={icon} size={active ? 22 : 20} color={active ? colors.accent : colors.textSecondary} />
+        </View>
+        <AppText size={compact ? 11 : 14} weight={active ? '700' : '400'} style={{ color: active ? colors.accent : colors.textSecondary }}>{label}</AppText>
+      </>}
     </Pressable>
   </Link>;
 }
@@ -71,6 +74,7 @@ export function AppShell() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right', 'bottom']}>
     <SheetHost>
     <ReminderSync />
+    <GettingStartedGate />
     <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column' }}>
       {wide ? <View style={[styles.sidebar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ padding: 14, gap: 4, marginBottom: 36 }}>

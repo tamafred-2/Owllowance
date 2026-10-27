@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('Accounts creates wallets, selects expense account and preserves totals after reload', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });

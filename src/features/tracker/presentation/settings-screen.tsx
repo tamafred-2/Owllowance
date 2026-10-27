@@ -13,6 +13,7 @@ import { ValidationError } from '../../../domain/money';
 import { pickTextFile, saveTextFile } from '../../../platform/files';
 import { useTracker } from './tracker-context';
 import { ReminderToggle } from './reminders';
+import { GettingStarted } from './getting-started';
 
 const appVersion = Constants.expoConfig?.version ?? '0.1.0';
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -28,6 +29,7 @@ export function SettingsScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [pending, setPending] = useState<{ envelope: BackupEnvelope; preview: BackupPreview } | null>(null);
   const [confirmUndo, setConfirmUndo] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const inFlight = useRef(false);
   async function run(task: string, work: () => Promise<string | null>) {
     if (!service || inFlight.current) return;
@@ -79,6 +81,13 @@ export function SettingsScreen() {
         <AppText size={18} weight="600">Reminders</AppText>
         <ReminderToggle />
       </Surface>
+      <Pressable accessibilityRole="button" accessibilityLabel="How to use Owllowance" onPress={() => setGuideOpen(true)}>
+        <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <AppIcon name="activity" size={22} color={colors.accent} />
+          <View style={{ flex: 1 }}><AppText weight="600">How to use Owllowance</AppText><AppText size={13} tone="secondary">A quick tour of the main features.</AppText></View>
+          <AppIcon name="next" color={colors.textSecondary} />
+        </Surface>
+      </Pressable>
       <Pressable accessibilityRole="link" accessibilityLabel="Manage categories" onPress={() => router.push({ pathname: '/categories', params: { from: back } })}>
         <Surface style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <AppIcon name="categories" size={22} color={colors.accent} />
@@ -96,6 +105,7 @@ export function SettingsScreen() {
       </Surface>
       <AppText size={12} tone="secondary" style={{ textAlign: 'center' }}>{`Owllowance ${appVersion}`}</AppText>
     </View>
+    {guideOpen ? <GettingStarted onDone={() => setGuideOpen(false)} /> : null}
     <AppModal title="Replace data with this backup?" visible={Boolean(pending)} onClose={() => { if (!busy) setPending(null); }}>
       {pending ? <View testID="restore-preview" style={{ gap: 6 }}>
         <AppText size={14}>{`Backup from ${when(pending.preview.exportedAt)}`}</AppText>
