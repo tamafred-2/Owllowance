@@ -192,3 +192,30 @@ test('backup export then restore replaces data and can be undone', async ({ page
   await (await bad).setFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"other"}') });
   await expect(page.getByText(/not an Owllowance backup/)).toBeVisible();
 });
+
+test('wallet list, grid and swipeable card views; choice is remembered', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('radio', { name: 'List view', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'List view', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('link', { name: 'Manage Savings', exact: true })).toContainText('₱200.00');
+  await page.screenshot({ path: testInfo.outputPath('wallet-list.png'), fullPage: true });
+  await page.getByRole('radio', { name: 'Card view', exact: true }).click();
+  const position = page.getByTestId('wallet-deck-position');
+  await expect(position).toHaveText('1 of 2');
+  await page.screenshot({ path: testInfo.outputPath('wallet-cards.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Next wallet', exact: true }).click();
+  await expect(position).toHaveText('2 of 2');
+  const box = (await page.getByTestId('wallet-deck').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7 - 60, { steps: 4 });
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.7 - 140, { steps: 4 });
+  await page.mouse.up();
+  await expect(position).toHaveText('1 of 2'); // Swipe up wraps to the first wallet.
+  await expect(page.getByTestId('wallet-deck')).not.toContainText(/\d{4} \d{4}/); // No card-number style text.
+  await page.getByRole('link', { name: 'Manage Cash', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Manage wallet', exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Back to Wallet', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Card view', exact: true })).toHaveAttribute('aria-checked', 'true');
+});

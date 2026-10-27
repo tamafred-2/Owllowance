@@ -135,6 +135,7 @@ async function readSettings(sql: SqlConnection): Promise<Settings> {
   const values = Object.fromEntries(rows.map(row => [row.key, row.value]));
   return {
     theme: values.theme === 'light' || values.theme === 'dark' ? values.theme : defaultSettings.theme,
+    walletView: values.walletView === 'list' || values.walletView === 'cards' ? values.walletView : defaultSettings.walletView,
     hiddenBalances: rows.filter(row => row.key.startsWith('hide:') && row.value === '1').map(row => row.key.slice(5)),
     reduceMotion: values.reduceMotion === '1',
     lastBackupAt: values.lastBackupAt ?? null,
@@ -170,7 +171,7 @@ async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promi
   await insert('transactions', records.transactions.filter(row => row.linked_id !== null));
   await insert('entries', records.entries);
   await insert('budgets', records.budgets);
-  await insert('settings', records.settings.filter(row => ['theme', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
+  await insert('settings', records.settings.filter(row => ['theme', 'walletView', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
   if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new ValidationError("This backup can't be restored: its records don't match.");
 }
 
@@ -488,6 +489,10 @@ export class SqlLedgerRepository implements LedgerRepository {
     if (settings.theme !== undefined) {
       if (!['system', 'light', 'dark'].includes(settings.theme)) throw new ValidationError('Choose a theme.');
       rows.push(['theme', settings.theme]);
+    }
+    if (settings.walletView !== undefined) {
+      if (!['grid', 'list', 'cards'].includes(settings.walletView)) throw new ValidationError('Choose a wallet view.');
+      rows.push(['walletView', settings.walletView]);
     }
     if (settings.reduceMotion !== undefined) rows.push(['reduceMotion', settings.reduceMotion ? '1' : '0']);
     if (settings.lastBackupAt !== undefined && settings.lastBackupAt !== null) {

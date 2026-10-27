@@ -177,14 +177,15 @@ test('history filters combine type, category, wallet, date range and literal sea
 
 test('settings persist with validated values; each balance is hidden independently', async t => {
   const f = await fixture(); t.after(() => f.connection.sqlite.close());
-  assert.deepEqual((await f.repository.overview()).settings, { theme: 'system', hiddenBalances: [], reduceMotion: false, lastBackupAt: null });
-  await f.repository.saveSettings({ theme: 'dark', lastBackupAt: '2026-10-27T01:00:00.000Z' });
+  assert.deepEqual((await f.repository.overview()).settings, { theme: 'system', walletView: 'grid', hiddenBalances: [], reduceMotion: false, lastBackupAt: null });
+  await f.repository.saveSettings({ theme: 'dark', walletView: 'cards', lastBackupAt: '2026-10-27T01:00:00.000Z' });
   await f.repository.setBalanceHidden(f.setup.walletId, true);
   await f.repository.setBalanceHidden('net-worth', true);
   await f.repository.setBalanceHidden('net-worth', false);
-  assert.deepEqual((await f.repository.overview()).settings, { theme: 'dark', hiddenBalances: [f.setup.walletId], reduceMotion: false, lastBackupAt: '2026-10-27T01:00:00.000Z' });
+  assert.deepEqual((await f.repository.overview()).settings, { theme: 'dark', walletView: 'cards', hiddenBalances: [f.setup.walletId], reduceMotion: false, lastBackupAt: '2026-10-27T01:00:00.000Z' });
   assert.throws(() => f.repository.setBalanceHidden('everything', true), /identifier/);
   assert.throws(() => f.repository.saveSettings({ theme: 'neon' as 'dark' }), /theme/);
+  assert.throws(() => f.repository.saveSettings({ walletView: 'tiles' as 'grid' }), /wallet view/);
   const backup = JSON.parse(JSON.stringify(await f.repository.exportBackup('test')));
   await f.repository.setBalanceHidden(f.setup.walletId, false);
   await f.repository.restoreBackup(backup);
