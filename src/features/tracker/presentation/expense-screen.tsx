@@ -85,7 +85,7 @@ function EntryEditor({ origin, originWalletId, initialMode, draft, editing }: { 
             onPress={() => router.replace({ pathname: '/expense', params: { duplicate: editing.id, from: origin, ...(originWalletId ? { walletId: originWalletId } : {}) } })} /> : null}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}><View style={{ padding: 10, borderRadius: 14, backgroundColor: colors.muted }}><AppIcon name={mode} color={colors.accent} /></View><AppText accessibilityRole="header" size={28} weight="600">{heading}</AppText></View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}><View style={{ padding: 8, borderRadius: 12, backgroundColor: colors.muted }}><AppIcon name={mode} size={18} color={colors.accent} /></View><AppText accessibilityRole="header" size={22} weight="600" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>{heading}</AppText></View>
           <DateField label="Date" compact value={form.localDate} onChange={form.setLocalDate} max={eventTime().localDate} disabled={busy} />
         </View>
         {!editing ? <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.muted }}>
