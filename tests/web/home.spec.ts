@@ -35,10 +35,10 @@ test('Home shows honest placeholders, daily cash flow and responsive navigation'
   await expect(navigation.getByText('Add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Total balance', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Recent activity', { exact: true })).toHaveCount(0);
-  for (const label of ['Goals', 'Debt']) {
+  for (const label of ['Debt']) {
     await expect(page.getByRole('button', { name: `${label}, coming soon`, exact: true })).toBeDisabled();
   }
-  for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights']) {
+  for (const label of ['Settings', 'Transfer', 'Budgets', 'Insights', 'Goals']) {
     await expect(page.getByRole('link', { name: label, exact: true }).first()).toBeEnabled();
   }
   await expect(page.getByTestId('today-net')).toContainText('₱0.00');

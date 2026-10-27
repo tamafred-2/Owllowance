@@ -11,6 +11,7 @@ import { addDays, displayDate, eventTime } from '../../../domain/date';
 import { ValidationError } from '../../../domain/money';
 import { useTracker } from './tracker-context';
 import { RecurringSection } from './recurring-section';
+import { GoalsSection } from './goals-section';
 import { usePullToRefresh } from './pull-to-refresh';
 
 const periodLabels: Record<BudgetPeriod, string> = { monthly: 'Monthly', weekly: 'Weekly', custom: 'Custom dates' };
@@ -119,10 +120,7 @@ export function PlanScreen() {
         </View>}
       </Surface>
       <RecurringSection />
-      <Surface style={{ gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><AppText size={18} weight="600">Savings goals</AppText><AppText size={12} tone="secondary">Coming soon</AppText></View>
-        <AppText size={13} tone="secondary">Set money aside for something and watch it grow.</AppText>
-      </Surface>
+      <GoalsSection />
     </View>
     {editing ? <BudgetForm budget={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
   </ScrollView>;

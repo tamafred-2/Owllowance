@@ -13,7 +13,7 @@ export async function seedFeeCategory(sql: SqlConnection): Promise<void> {
 }
 
 export const FEE_CATEGORY = '00000000-0000-4000-8000-000000000106';
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 // v4: transfers carry two entries, linked fee expenses, budgets and preferences.
 const ledgerSchema = `
 CREATE TABLE transactions (
@@ -76,6 +76,28 @@ CREATE TABLE recurring_occurrences (
   PRIMARY KEY (recurring_id, due_date)
 );
 CREATE INDEX recurring_occurrences_transaction ON recurring_occurrences(transaction_id);
+`;
+// v6: savings goals and their contributions. Contributions track money set aside; they are not
+// ledger entries, so balances, spending and net worth are unchanged.
+const v6Objects = `
+CREATE TABLE goals (
+  id TEXT PRIMARY KEY NOT NULL,
+  profile_id TEXT NOT NULL REFERENCES profiles(id),
+  name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 60),
+  target_minor INTEGER NOT NULL CHECK (typeof(target_minor) = 'integer' AND target_minor > 0 AND target_minor <= ${MAX_MINOR}),
+  target_date TEXT CHECK (target_date IS NULL OR length(target_date) = 10),
+  icon_key TEXT NOT NULL,
+  color_token TEXT NOT NULL,
+  archived_at TEXT
+);
+CREATE TABLE goal_contributions (
+  id TEXT PRIMARY KEY NOT NULL,
+  goal_id TEXT NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor <> 0 AND abs(amount_minor) <= ${MAX_MINOR}),
+  local_date TEXT NOT NULL CHECK (length(local_date) = 10),
+  note TEXT NOT NULL CHECK (length(note) <= 200)
+);
+CREATE INDEX goal_contributions_goal ON goal_contributions(goal_id, local_date);
 `;
 const v4Objects = `
 CREATE TRIGGER validate_entry BEFORE INSERT ON entries BEGIN ${entrySignCheck} END;
@@ -240,6 +262,12 @@ export async function migrate(database: Database): Promise<void> {
       if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
       await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 5, new Date().toISOString());
       await sql.execAsync('PRAGMA user_version = 5');
+    }
+    if (version < 6) {
+      await sql.execAsync(v6Objects);
+      if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new Error('Migration integrity check failed.');
+      await sql.runAsync('INSERT INTO schema_migrations VALUES (?, ?)', 6, new Date().toISOString());
+      await sql.execAsync('PRAGMA user_version = 6');
     }
   });
 }

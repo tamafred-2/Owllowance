@@ -1,6 +1,6 @@
 import { validateWalletName } from '../domain/wallet-name';
 import type {
-  ActivityItem, Budget, BudgetCommand, CategoryCommand, DueItem, EditEntryCommand, EditTransferCommand, EntryCommand, HistoryFilter, LedgerRepository,
+  ActivityItem, Budget, BudgetCommand, CategoryCommand, ContributionCommand, DueItem, Goal, GoalCommand, GoalContribution, EditEntryCommand, EditTransferCommand, EntryCommand, HistoryFilter, LedgerRepository,
   ManagedCategory, OpeningCommand, Overview, PayRecurringCommand, RecurringCommand, RecurringRule, Report, Settings, TransferCommand, Wallet,
 } from '../domain/ledger';
 import { defaultSettings, NET_WORTH } from '../domain/ledger';
@@ -161,7 +161,7 @@ function envelopeOf(records: BackupRecords, appVersion: string): BackupEnvelope 
 
 // Replaces every ledger row inside the caller's transaction; constraints and triggers re-check the data.
 async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promise<void> {
-  await sql.execAsync(`DELETE FROM recurring_occurrences; DELETE FROM recurring; DELETE FROM budgets; DELETE FROM entries; DELETE FROM transactions WHERE linked_id IS NOT NULL;
+  await sql.execAsync(`DELETE FROM goal_contributions; DELETE FROM goals; DELETE FROM recurring_occurrences; DELETE FROM recurring; DELETE FROM budgets; DELETE FROM entries; DELETE FROM transactions WHERE linked_id IS NOT NULL;
     DELETE FROM transactions; DELETE FROM categories; DELETE FROM accounts; DELETE FROM profiles; DELETE FROM settings;`);
   const insert = async (table: keyof BackupRecords, rows: BackupRecords[keyof BackupRecords]) => {
     const columns = backupColumns[table];
@@ -178,6 +178,8 @@ async function replaceRecords(sql: SqlConnection, records: BackupRecords): Promi
   await insert('budgets', records.budgets);
   await insert('recurring', records.recurring);
   await insert('recurring_occurrences', records.recurring_occurrences);
+  await insert('goals', records.goals);
+  await insert('goal_contributions', records.goal_contributions);
   await insert('settings', records.settings.filter(row => ['theme', 'walletView', 'deckWallet', 'reminders', 'guideSeen', 'reduceMotion', 'lastBackupAt'].includes(String(row.key)) || /^hide:[\w-]{1,40}$/.test(String(row.key))));
   if ((await sql.getAllAsync('PRAGMA foreign_key_check')).length) throw new ValidationError("This backup can't be restored: its records don't match.");
 }
@@ -268,6 +270,9 @@ export class SqlLedgerRepository implements LedgerRepository {
         categories: await sql.getAllAsync("SELECT id, name, icon_key AS iconKey, color_token AS colorToken FROM categories WHERE type = 'expense' AND archived_at IS NULL ORDER BY rowid"),
         recent: await sql.getAllAsync<ActivityItem>(activityQuery, 5, 0),
         budgets, due: await dueItems(sql, today), settings: await readSettings(sql),
+        goals: await sql.getAllAsync<Goal>(`SELECT g.id, g.name, g.target_minor AS targetMinor, g.target_date AS targetDate, g.icon_key AS iconKey,
+          g.color_token AS colorToken, g.archived_at AS archivedAt, COALESCE(SUM(c.amount_minor), 0) AS savedMinor
+          FROM goals g LEFT JOIN goal_contributions c ON c.goal_id = g.id GROUP BY g.id ORDER BY g.archived_at IS NOT NULL, g.rowid`),
         restoreSnapshotAt: (await sql.getFirstAsync<{ created_at: string }>('SELECT created_at FROM restore_snapshots WHERE id = 1'))?.created_at ?? null,
       };
     });
@@ -666,6 +671,75 @@ export class SqlLedgerRepository implements LedgerRepository {
       if (!rule) throw new ValidationError('Recurring item not found.');
       if (!dueDates(rule, dueDate, dueDate).length) throw new ValidationError('That date is not on this schedule.');
       await sql.runAsync("INSERT OR IGNORE INTO recurring_occurrences (recurring_id, due_date, status) VALUES (?, ?, 'skipped')", recurringId, dueDate);
+    });
+  }
+
+  saveGoal(command: GoalCommand): Promise<void> {
+    assertId(command.id); assertMinor(command.targetMinor);
+    if (command.targetMinor <= 0) throw new ValidationError('Target must be greater than zero.');
+    const name = command.name.trim();
+    if (!name || name.length > 60) throw new ValidationError('Use a name between 1 and 60 characters.');
+    if (command.targetDate !== null) assertLocalDate(command.targetDate);
+    if (!(categoryIconKeys as readonly string[]).includes(command.iconKey)) throw new ValidationError('Choose an icon.');
+    if (!(categoryColorTokens as readonly string[]).includes(command.colorToken)) throw new ValidationError('Choose a color.');
+    return this.database.transaction(async sql => {
+      if (!await sql.getFirstAsync('SELECT id FROM profiles WHERE id = ?', PROFILE)) throw new ValidationError('Create a wallet first.');
+      await sql.runAsync(`INSERT INTO goals (id, profile_id, name, target_minor, target_date, icon_key, color_token) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name, target_minor = excluded.target_minor, target_date = excluded.target_date,
+        icon_key = excluded.icon_key, color_token = excluded.color_token`, command.id, PROFILE, name, command.targetMinor, command.targetDate, command.iconKey, command.colorToken);
+    });
+  }
+
+  setGoalArchived(id: string, archived: boolean): Promise<void> {
+    assertId(id);
+    return this.database.transaction(async sql => {
+      const result = await sql.runAsync('UPDATE goals SET archived_at = ? WHERE id = ? AND profile_id = ?', archived ? new Date().toISOString() : null, id, PROFILE);
+      if (!result.changes) throw new ValidationError('Goal not found.');
+    });
+  }
+
+  deleteGoal(id: string): Promise<void> {
+    assertId(id);
+    return this.database.transaction(async sql => {
+      await sql.runAsync('DELETE FROM goal_contributions WHERE goal_id = ?', id);
+      await sql.runAsync('DELETE FROM goals WHERE id = ? AND profile_id = ?', id, PROFILE);
+    });
+  }
+
+  goalContributions(goalId: string): Promise<GoalContribution[]> {
+    assertId(goalId);
+    return this.database.exclusive(sql => sql.getAllAsync<GoalContribution>(`SELECT id, goal_id AS goalId, amount_minor AS amountMinor, local_date AS localDate, note
+      FROM goal_contributions WHERE goal_id = ? ORDER BY local_date DESC, rowid DESC`, goalId));
+  }
+
+  // Positive adds to the goal, negative takes out; the saved total may not go below zero. Retries are harmless.
+  addContribution(command: ContributionCommand): Promise<void> {
+    assertId(command.id); assertId(command.goalId); assertMinor(command.amountMinor); assertLocalDate(command.localDate);
+    if (command.amountMinor === 0) throw new ValidationError('Amount must not be zero.');
+    if (command.note.length > 200) throw new ValidationError('Keep notes within 200 characters.');
+    return this.database.transaction(async sql => {
+      const existing = await sql.getFirstAsync<{ goal_id: string; amount_minor: number }>('SELECT goal_id, amount_minor FROM goal_contributions WHERE id = ?', command.id);
+      if (existing) {
+        if (existing.goal_id === command.goalId && existing.amount_minor === command.amountMinor) return;
+        throw new ValidationError('This request identifier was already used.');
+      }
+      const goal = await sql.getFirstAsync<{ saved: number }>(`SELECT COALESCE((SELECT SUM(amount_minor) FROM goal_contributions WHERE goal_id = g.id), 0) AS saved
+        FROM goals g WHERE g.id = ? AND g.profile_id = ?`, command.goalId, PROFILE);
+      if (!goal) throw new ValidationError('Goal not found.');
+      if (addMinor(goal.saved, command.amountMinor) < 0) throw new ValidationError("You can't take out more than is saved.");
+      await sql.runAsync('INSERT INTO goal_contributions (id, goal_id, amount_minor, local_date, note) VALUES (?, ?, ?, ?, ?)',
+        command.id, command.goalId, command.amountMinor, command.localDate, command.note.trim());
+    });
+  }
+
+  deleteContribution(id: string): Promise<void> {
+    assertId(id);
+    return this.database.transaction(async sql => {
+      const row = await sql.getFirstAsync<{ goal_id: string; amount_minor: number }>('SELECT goal_id, amount_minor FROM goal_contributions WHERE id = ?', id);
+      if (!row) return;
+      const saved = (await sql.getFirstAsync<{ saved: number }>('SELECT COALESCE(SUM(amount_minor), 0) AS saved FROM goal_contributions WHERE goal_id = ?', row.goal_id))?.saved ?? 0;
+      if (saved - row.amount_minor < 0) throw new ValidationError('Removing this would make the saved total negative.');
+      await sql.runAsync('DELETE FROM goal_contributions WHERE id = ?', id);
     });
   }
 

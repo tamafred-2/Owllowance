@@ -75,13 +75,13 @@ test('backups carry recurring items; older version 4 backups still restore', asy
   const f = await withRule(); t.after(() => f.connection.sqlite.close());
   await f.repository.skipRecurring(f.rule.id, f.today);
   const backup = JSON.parse(JSON.stringify(await f.repository.exportBackup('test')));
-  assert.equal(backup.schemaVersion, 5);
+  assert.equal(backup.schemaVersion, 6);
   assert.equal(backup.records.recurring.length, 1);
   const target = await fixture(); t.after(() => target.connection.sqlite.close());
   await target.repository.restoreBackup(backup);
   assert.equal((await target.repository.recurring())[0].name, 'Internet');
   const older = JSON.parse(JSON.stringify(backup));
-  older.schemaVersion = 4; delete older.records.recurring; delete older.records.recurring_occurrences;
+  older.schemaVersion = 4; delete older.records.recurring; delete older.records.recurring_occurrences; delete older.records.goals; delete older.records.goal_contributions;
   await target.repository.restoreBackup(older);
   assert.equal((await target.repository.recurring()).length, 0);
   const broken = JSON.parse(JSON.stringify(backup));

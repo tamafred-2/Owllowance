@@ -329,3 +329,27 @@ test('recurring bill set up on Plan shows on Home and Paid records it once', asy
   await page.getByRole('link', { name: 'Wallet', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('850.00');
 });
+
+test('savings goal tracks added and taken-out money without touching wallet balances', async ({ page }, testInfo) => {
+  await setup(page);
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
+  await page.getByRole('link', { name: 'Goals', exact: true }).click();
+  await page.getByRole('button', { name: 'Add goal', exact: true }).click();
+  await page.getByLabel('Goal name', { exact: true }).fill('New phone');
+  await page.getByLabel('Target (PHP)', { exact: true }).fill('15000');
+  await page.getByRole('button', { name: 'Save goal', exact: true }).click();
+  await expect(page.getByTestId('goal-list')).toContainText('New phone');
+  await page.getByRole('button', { name: 'Open goal New phone', exact: true }).click();
+  await page.getByRole('button', { name: 'Add money', exact: true }).click();
+  await page.getByLabel('Amount to add (PHP)', { exact: true }).fill('3000');
+  await page.getByRole('button', { name: 'Add to goal', exact: true }).click();
+  await page.getByRole('button', { name: 'Take out', exact: true }).click();
+  await page.getByLabel('Amount to take out (PHP)', { exact: true }).fill('500');
+  await page.getByRole('button', { name: 'Take out', exact: true }).last().click();
+  await expect(page.getByTestId('goal-history')).toContainText('₱3,000.00');
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+  await expect(page.getByTestId('goal-list')).toContainText('₱2,500.00');
+  await page.screenshot({ path: testInfo.outputPath('goals.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Wallet', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage Cash', exact: true })).toContainText('1,000.00'); // Unchanged.
+});

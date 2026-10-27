@@ -2,14 +2,14 @@ import { MAX_MINOR, ValidationError } from './money';
 
 // Portable, unencrypted JSON backup. Rows mirror the storage columns of schema v4.
 export const BACKUP_FORMAT = 'owllowance-backup';
-export const BACKUP_SCHEMA_VERSION = 5;
-// Version 4 files (before recurring items) still restore; their recurring tables are empty.
+export const BACKUP_SCHEMA_VERSION = 6;
+// Older files still restore: version 4 has no recurring items, versions 4-5 have no goals.
 const MAX_RECORDS = 500_000;
 
 type Row = Record<string, string | number | null>;
 export type BackupRecords = {
   profiles: Row[]; accounts: Row[]; categories: Row[]; transactions: Row[]; entries: Row[]; budgets: Row[]; settings: Row[];
-  recurring: Row[]; recurring_occurrences: Row[];
+  recurring: Row[]; recurring_occurrences: Row[]; goals: Row[]; goal_contributions: Row[];
 };
 export type BackupEnvelope = {
   format: typeof BACKUP_FORMAT; schemaVersion: number; exportedAt: string; appVersion: string; currency: 'PHP'; records: BackupRecords;
@@ -29,9 +29,11 @@ export const backupColumns: Record<keyof BackupRecords, string[]> = {
   settings: ['key', 'value'],
   recurring: ['id', 'profile_id', 'name', 'type', 'amount_minor', 'account_id', 'category_id', 'frequency', 'every', 'start_date', 'paused'],
   recurring_occurrences: ['recurring_id', 'due_date', 'status', 'transaction_id'],
+  goals: ['id', 'profile_id', 'name', 'target_minor', 'target_date', 'icon_key', 'color_token', 'archived_at'],
+  goal_contributions: ['id', 'goal_id', 'amount_minor', 'local_date', 'note'],
 };
-const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor', 'every', 'paused']);
-const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id']);
+const integerColumns = new Set(['offset_minutes', 'revision', 'amount_minor', 'limit_minor', 'every', 'paused', 'target_minor']);
+const nullableColumns = new Set(['archived_at', 'category_id', 'linked_id', 'start_date', 'end_date', 'transaction_id', 'target_date']);
 const uuid = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i;
 
 function fail(message: string): never { throw new ValidationError(`This backup can't be restored: ${message}`); }
@@ -41,14 +43,16 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   if (!input || typeof input !== 'object') fail('the file is not an Owllowance backup.');
   const candidate = input as Partial<BackupEnvelope>;
   if (candidate.format !== BACKUP_FORMAT) fail('the file is not an Owllowance backup.');
-  if (candidate.schemaVersion !== BACKUP_SCHEMA_VERSION && candidate.schemaVersion !== 4) fail('it was made by an unsupported version of Owllowance.');
+  if (![4, 5, BACKUP_SCHEMA_VERSION].includes(Number(candidate.schemaVersion))) fail('it was made by an unsupported version of Owllowance.');
   if (candidate.currency !== 'PHP') fail('its currency is not supported.');
   if (typeof candidate.exportedAt !== 'string' || !Number.isFinite(Date.parse(candidate.exportedAt))) fail('its export date is invalid.');
   const records = candidate.records;
   if (!records || typeof records !== 'object') fail('records are missing.');
   let count = 0;
   for (const [table, columns] of Object.entries(backupColumns) as [keyof BackupRecords, string[]][]) {
-    if (candidate.schemaVersion === 4 && (table === 'recurring' || table === 'recurring_occurrences') && records[table] === undefined) records[table] = [];
+    const addedLater = ((table === 'recurring' || table === 'recurring_occurrences') && candidate.schemaVersion === 4)
+      || ((table === 'goals' || table === 'goal_contributions') && Number(candidate.schemaVersion) < 6);
+    if (addedLater && records[table] === undefined) records[table] = [];
     const rows = records[table];
     if (!Array.isArray(rows)) fail(`${table} are missing.`);
     count += rows.length;
@@ -94,6 +98,13 @@ export function validateBackup(input: unknown): { envelope: BackupEnvelope; prev
   for (const rule of records.recurring) {
     if (!uuid.test(String(rule.id))) fail('it contains an invalid identifier.');
     if (!accountIds.has(String(rule.account_id)) || !categoryIds.has(String(rule.category_id))) fail('a recurring item refers to a missing record.');
+  }
+  const goalIds = ids(records.goals);
+  if (goalIds.size !== records.goals.length) fail('it contains duplicate records.');
+  for (const goal of records.goals) if (!uuid.test(String(goal.id))) fail('it contains an invalid identifier.');
+  for (const contribution of records.goal_contributions) {
+    if (!uuid.test(String(contribution.id))) fail('it contains an invalid identifier.');
+    if (!goalIds.has(String(contribution.goal_id))) fail('a goal contribution refers to a missing goal.');
   }
   for (const occurrence of records.recurring_occurrences) {
     if (!ruleIds.has(String(occurrence.recurring_id))) fail('a recurring payment refers to a missing item.');

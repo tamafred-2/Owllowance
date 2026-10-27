@@ -1,6 +1,6 @@
 import type {
   ActivityItem, BudgetCommand, BudgetPeriod, CategoryCommand, CategoryType, DueItem, EditEntryCommand, EntryCommand, LedgerRepository,
-  EditTransferCommand, OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
+  ContributionCommand, EditTransferCommand, GoalCommand, OpeningCommand, PayRecurringCommand, RecurringCommand, TransferCommand, WalletKind,
 } from '../../../domain/ledger';
 import type { Frequency } from '../../../domain/recurring';
 import { addDays, assertLocalDate, eventTime, eventTimeOn } from '../../../domain/date';
@@ -88,6 +88,16 @@ export class TrackerService {
     const today = eventTime().localDate;
     return { id: this.uuid(), recurringId: item.recurringId, dueDate: item.dueDate, walletId: item.walletId, categoryId: item.categoryId,
       amountMinor: item.amountMinor, note: item.name, ...(item.dueDate < today ? eventTimeOn(item.dueDate) : eventTime()) };
+  }
+
+  prepareGoal(input: { id?: string; name: string; target: string; targetDate: string | null; iconKey: string; colorToken: string }): GoalCommand {
+    return { id: input.id ?? this.uuid(), name: input.name, targetMinor: parseAmount(input.target), targetDate: input.targetDate, iconKey: input.iconKey, colorToken: input.colorToken };
+  }
+
+  // Taking out is stored as a negative contribution.
+  prepareContribution(input: { goalId: string; amount: string; takeOut: boolean; localDate: string; note: string }): ContributionCommand {
+    const amount = parseAmount(input.amount);
+    return { id: this.uuid(), goalId: input.goalId, amountMinor: input.takeOut ? -amount : amount, localDate: input.localDate, note: input.note.trim() };
   }
 
   private when(localDate?: string) {

@@ -49,6 +49,13 @@ export type RecurringCommand = {
   id: string; name: string; type: CategoryType; amountMinor: number; walletId: string; categoryId: string;
   frequency: Frequency; every: number; startDate: string;
 };
+export type Goal = {
+  id: string; name: string; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string;
+  archivedAt: string | null; savedMinor: number;
+};
+export type GoalContribution = { id: string; goalId: string; amountMinor: number; localDate: string; note: string };
+export type GoalCommand = { id: string; name: string; targetMinor: number; targetDate: string | null; iconKey: string; colorToken: string };
+export type ContributionCommand = { id: string; goalId: string; amountMinor: number; localDate: string; note: string };
 export type PayRecurringCommand = EntryCommand & { recurringId: string; dueDate: string };
 export type Overview = {
   wallet: Wallet | null;
@@ -66,6 +73,7 @@ export type Overview = {
   recent: ActivityItem[];
   budgets: Budget[];
   due: DueItem[];
+  goals: Goal[];
   settings: Settings;
   restoreSnapshotAt: string | null;
 };
@@ -118,6 +126,12 @@ export interface LedgerRepository {
   deleteRecurring(id: string): Promise<void>;
   payRecurring(command: PayRecurringCommand): Promise<void>;
   skipRecurring(recurringId: string, dueDate: string): Promise<void>;
+  saveGoal(command: GoalCommand): Promise<void>;
+  setGoalArchived(id: string, archived: boolean): Promise<void>;
+  deleteGoal(id: string): Promise<void>;
+  goalContributions(goalId: string): Promise<GoalContribution[]>;
+  addContribution(command: ContributionCommand): Promise<void>;
+  deleteContribution(id: string): Promise<void>;
   exportBackup(appVersion: string): Promise<BackupEnvelope>;
   restoreBackup(envelope: BackupEnvelope): Promise<void>;
   undoRestore(): Promise<void>;

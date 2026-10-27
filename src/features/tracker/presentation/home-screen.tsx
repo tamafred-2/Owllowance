@@ -17,7 +17,7 @@ import { WalletSetup } from './wallet-setup';
 
 const quickActions: { label: string; icon: IconName; href?: '/transfer' | '/plan' | '/reports' }[] = [
   { label: 'Transfer', icon: 'transfer', href: '/transfer' /* opens as a sheet */ }, { label: 'Budgets', icon: 'budgets', href: '/plan' },
-  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals' }, { label: 'Debt', icon: 'debt' },
+  { label: 'Insights', icon: 'insights', href: '/reports' }, { label: 'Goals', icon: 'goals', href: '/plan' }, { label: 'Debt', icon: 'debt' },
 ];
 
 export function HomeScreen() {
